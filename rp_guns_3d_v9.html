@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RP Gun Shop 3D v9</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #15171c; color: #e8e8e8; display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+  #side { width: 240px; background: #1d2028; overflow-y: auto; padding: 12px; border-right: 1px solid #2c3039; flex-shrink: 0; }
+  #side h1 { font-size: 16px; margin: 4px 0 12px; }
+  .gun-btn { display: block; width: 100%; text-align: left; background: #262a33; color: inherit; border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; margin-bottom: 5px; cursor: pointer; font-size: 13px; }
+  .gun-btn:hover { border-color: #4a5060; }
+  .gun-btn.active { border-color: #f2c500; background: #30343f; }
+  .gun-btn small { display: block; color: #9aa0ad; font-size: 11px; margin-top: 2px; }
+  #view { flex: 1; position: relative; min-width: 0; min-height: 0; }
+  #canvas-wrap { position: absolute; inset: 0; }
+  #toolbar { position: absolute; top: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100% - 150px); }
+  #toolbar button { background: rgba(30,33,41,0.95); color: #e8e8e8; border: 1px solid #3a3f4b; border-radius: 6px; padding: 7px 12px; cursor: pointer; font-size: 13px; }
+  #toolbar button:hover { border-color: #f2c500; }
+  #toolbar button.on { border-color: #f2c500; background: #3a3420; }
+  #hud { position: absolute; top: 12px; right: 16px; text-align: right; pointer-events: none; }
+  #hud .num { font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  #hud .cap { font-size: 15px; color: #9aa0ad; }
+  #hud #hs { font-size: 12px; color: #f2c500; min-height: 16px; margin-top: 4px; }
+  #hud #keys { font-size: 11px; color: #6f7684; margin-top: 2px; }
+  #actions { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 3; }
+  #actions button { width: 76px; height: 76px; border-radius: 50%; border: 2px solid #f2c500; background: rgba(30,33,41,0.92); color: #f2c500; font-weight: 700; font-size: 13px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #actions button:active { background: #3a3420; }
+  #actions #btn-reload { border-color: #7d8491; color: #e8e8e8; }
+  #info { position: absolute; left: 16px; bottom: 16px; right: 110px; max-width: 600px; background: rgba(20,22,28,0.94); border: 1px solid #2c3039; border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.5; }
+  #info h2 { margin: 0 0 6px; font-size: 18px; }
+  #info .tag { display: inline-block; background: #30343f; border-radius: 4px; padding: 2px 6px; margin: 0 4px 4px 0; font-size: 12px; }
+  #info .stats { margin-top: 8px; font-size: 13px; color: #b8bdc8; }
+  @media (max-width: 700px) {
+    body { flex-direction: column; }
+    #side { width: auto; border-right: none; border-bottom: 1px solid #2c3039; padding: 8px; overflow-x: auto; overflow-y: hidden; }
+    #side h1 { display: none; }
+    #list { display: flex; gap: 6px; }
+    .gun-btn { width: auto; min-width: 140px; margin-bottom: 0; white-space: nowrap; }
+    #toolbar { top: 8px; left: 8px; gap: 4px; max-width: calc(100% - 110px); }
+    #toolbar button { padding: 6px 9px; font-size: 12px; }
+    #hud { top: 8px; right: 10px; }
+    #hud .num { font-size: 24px; }
+    #hud #keys { display: none; }
+    #actions { right: 8px; gap: 10px; }
+    #actions button { width: 64px; height: 64px; font-size: 12px; }
+    #info { left: 8px; right: 8px; bottom: 8px; max-width: none; max-height: 30%; overflow-y: auto; font-size: 12px; padding: 10px 12px; }
+    #info h2 { font-size: 15px; margin-bottom: 4px; }
+    #info .stats { font-size: 12px; margin-top: 4px; }
+  }
+</style>
+</head>
+<body>
+<div id="side">
+  <h1>RP Gun Shop</h1>
+  <div id="list"></div>
+</div>
+<div id="view">
+  <div id="canvas-wrap"></div>
+  <div id="toolbar">
+    <button data-view="side" class="on">Side</button>
+    <button data-view="three">3/4</button>
+    <button data-view="top">Top</button>
+    <button data-view="front">Front</button>
+    <button id="btn-sound" class="on">Sound: on</button>
+  </div>
+  <div id="hud">
+    <div><span class="num" id="am">0</span> <span class="cap" id="cp"></span></div>
+    <div id="hs"></div>
+    <div id="keys">Space: fire · R: reload</div>
+  </div>
+  <div id="actions">
+    <button id="btn-fire">FIRE</button>
+    <button id="btn-reload">RELOAD</button>
+  </div>
+  <div id="info"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// =====================================================================
+// Palette
+// =====================================================================
+const BLUED = 0x2b2f36, STEEL = 0x8e949d, STAINLESS = 0xb4bac3, POLY = 0x1f2024,
+      BLACK = 0x0e0f11, FDE = 0x6e5a3e, OD = 0x4a5035, WOOD = 0x7a4b28,
+      BRASS = 0xc9a24a, YELLOW = 0xf2c500, RED = 0x9b1c1c;
+const WOODS = new Set([WOOD]);
+
+// =====================================================================
+// Builders. 1 unit = 100 mm. Barrel points along +X, bore up = +Y.
+// Parts are drawn as side profiles in XY and extruded along Z.
+// R('role', fn) puts parts into a sub-group so they can animate.
+// =====================================================================
+let ROLE = null;
+function R(name, fn) { const prev = ROLE; ROLE = name; fn(); ROLE = prev; }
+function target(g) {
+  if (!ROLE) return g;
+  if (!g.roles) g.roles = {};
+  if (!g.roles[ROLE]) { const grp = new THREE.Group(); g.add(grp); g.roles[ROLE] = grp; }
+  return g.roles[ROLE];
+}
+const _mc = {};
+let _woodTex = null;
+function woodTex() {
+  if (_woodTex) return _woodTex;
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#7a4b28'; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 90; i++) {
+    const y0 = Math.random() * 256, a = 2 + Math.random() * 5, f = 0.01 + Math.random() * 0.02, ph = Math.random() * 6;
+    x.strokeStyle = Math.random() < 0.5 ? 'rgba(50,25,10,0.28)' : 'rgba(170,110,60,0.22)';
+    x.lineWidth = 0.6 + Math.random() * 1.8;
+    x.beginPath();
+    for (let px = 0; px <= 256; px += 8) { const py = y0 + Math.sin(px * f * 6.28 + ph) * a; if (px) x.lineTo(px, py); else x.moveTo(px, py); }
+    x.stroke();
+  }
+  _woodTex = new THREE.CanvasTexture(c);
+  _woodTex.wrapS = _woodTex.wrapT = THREE.RepeatWrapping;
+  _woodTex.repeat.set(0.5, 1.4);
+  return _woodTex;
+}
+function mat(col) {
+  if (_mc[col]) return _mc[col];
+  let o;
+  if (WOODS.has(col)) o = { color: 0xffffff, map: woodTex(), roughness: 0.55, metalness: 0 };
+  else if (col === STEEL || col === STAINLESS || col === BRASS) o = { color: col, roughness: 0.2, metalness: 1 };
+  else if (col === POLY || col === FDE || col === YELLOW || col === RED) o = { color: col, roughness: 0.62, metalness: 0.05 };
+  else o = { color: col, roughness: 0.38, metalness: 0.85 };
+  return (_mc[col] = new THREE.MeshStandardMaterial(o));
+}
+function extrude(g, shape, w, col, x = 0, y = 0, z = 0, bevel) {
+  if (bevel === undefined) {
+    // Auto-round every edge in proportion to the part size so nothing looks like a slab.
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    shape.getPoints(6).forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+    bevel = Math.max(0.003, Math.min(0.026, 0.14 * Math.min(w, x1 - x0, y1 - y0)));
+  }
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: w, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 18 });
+  geo.translate(0, 0, -w / 2);
+  const m = new THREE.Mesh(geo, mat(col));
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  target(g).add(m);
+  return m;
+}
+function P(g, pts, w, col, x = 0, y = 0, z = 0) {
+  return extrude(g, new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], p[1]))), w, col, x, y, z);
+}
+function PH(g, pts, hole, w, col) {
+  const s = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], p[1])));
+  s.holes.push(new THREE.Path(hole.map(p => new THREE.Vector2(p[0], p[1]))));
+  return extrude(g, s, w, col);
+}
+function B(g, x0, y0, x1, y1, w, col, z = 0) {
+  return P(g, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], w, col, 0, 0, z);
+}
+function C(g, r, len, col, x, y, z, axis = 'x', seg = 24) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), mat(col));
+  if (axis === 'x') m.rotation.z = Math.PI / 2;
+  if (axis === 'z') m.rotation.x = Math.PI / 2;
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  target(g).add(m);
+  return m;
+}
+function S(g, r, col, x, y, z) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), mat(col));
+  m.position.set(x, y, z); m.castShadow = true;
+  target(g).add(m);
+  return m;
+}
+// Hollow barrel (lathed tube, open at the tip). Returns the tip x.
+function barrel(g, r, L, x0, y, z = 0, col = BLUED) {
+  const pts = [new THREE.Vector2(r * 0.55, 0), new THREE.Vector2(r, 0), new THREE.Vector2(r, L), new THREE.Vector2(r * 0.55, L)];
+  const geo = new THREE.LatheGeometry(pts, 32);
+  geo.rotateZ(-Math.PI / 2);
+  geo.translate(x0, y, z);
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, metalness: 0.6, roughness: 0.35, side: THREE.DoubleSide }));
+  m.castShadow = true;
+  target(g).add(m);
+  return x0 + L;
+}
+// Trigger blade hanging from its pin at (px,py). Must be called inside R().
+function trigger(g, px, py, w = 0.05, L = 0.22) {
+  const grp = target(g);
+  grp.position.set(px, py, 0);
+  const s = new THREE.Shape();
+  s.moveTo(-0.03, 0); s.lineTo(0.025, 0);
+  s.quadraticCurveTo(0.075, -L * 0.5, 0.055, -L);
+  s.lineTo(0.0, -L);
+  s.quadraticCurveTo(0.02, -L * 0.5, -0.03, -0.03);
+  s.closePath();
+  extrude(g, s, w, STEEL, 0, 0, 0, 0.004);
+  return grp;
+}
+// Trigger guard: rounded loop between x0..x1 and yt..yb.
+function guard2(g, x0, x1, yt, yb, w, col = POLY, th = 0.07) {
+  const s = new THREE.Shape();
+  s.moveTo(x0, yt); s.lineTo(x1, yt);
+  s.bezierCurveTo(x1 + 0.1, yt, x1 + 0.1, yb + 0.12, x1 - 0.1, yb);
+  s.lineTo(x0, yb); s.closePath();
+  const h = new THREE.Path();
+  h.moveTo(x0 + 0.02, yt - th); h.lineTo(x1 - 0.06, yt - th);
+  h.bezierCurveTo(x1, yt - th, x1, yb + 0.14, x1 - 0.14, yb + th);
+  h.lineTo(x0 + 0.02, yb + th); h.closePath();
+  s.holes.push(h);
+  return extrude(g, s, w, col, 0, 0, 0, 0.014);
+}
+// Thin vertical grooves (serrations, vents, ribs).
+function ticks(g, x0, x1, y0, y1, zw, n, th, col) {
+  for (let i = 0; i < n; i++) {
+    const x = x0 + (x1 - x0) * (n === 1 ? 0 : i / (n - 1));
+    B(g, x, y0, x + th, y1, zw, col);
+  }
+}
+// Grip texture lines that follow a slanted grip, on both sides.
+function gripLines(g, y0, y1, b0, b1, f0, f1, z, n = 8) {
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const y = y0 + (y1 - y0) * t;
+    const xb = b0 + (b1 - b0) * t + 0.07, xf = f0 + (f1 - f0) * t - 0.07;
+    B(g, xb, y, xf, y + 0.014, 0.012, BLACK, z);
+    B(g, xb, y, xf, y + 0.014, 0.012, BLACK, -z);
+  }
+}
+// Move a role group's origin to a pivot point (so it rotates about it).
+function setPivot(g, role, px, py) {
+  const grp = g.roles[role];
+  grp.children.forEach(c => { c.position.x -= px; c.position.y -= py; });
+  grp.position.set(px, py, 0);
+}
+// Ejection port with a bolt slab inside it that can slide back.
+function portBolt(g, px0, px1, y0, y1, bodyW, bx0, bx1, by0, by1) {
+  B(g, px0, y0, px1, y1, bodyW + 0.012, BLACK);
+  R('slide', () => B(g, bx0, by0, bx1, by1, bodyW + 0.02, STEEL));
+}
+
+// =====================================================================
+// Guns. Real overall sizes (1 unit = 100 mm):
+// Glock 17 204 mm, Desert Eagle ~260-270, M1911 216, X26 ~160, S&W 686 4" ~240,
+// Uzi ~470 (stock folded), MP5A3 660 (stock out), P90 400, AKM 880, M4 840,
+// Remington 700 ~1100, AWP 1200, Remington 870 ~1060, coach gun ~1000, M249 1040.
+// kind: semi | auto | revolver | pump | bolt | double | taser
+// =====================================================================
+const GUNS = {
+  glock: {
+    name: 'Glock 17', tags: ['Pistol', 'Starter sidearm'], kind: 'semi', reload: 'mag', cap: 17, rpm: 600,
+    snd: 'pistol', rc: 'pistol', case: 'pistol', lock: true, travel: 0.3,
+    muzzle: [0.99, 0.19], eject: [-0.1, 0.3],
+    use: 'The most common sidearm in RP servers. Usually the first weapon a new player gets, and the default for police, civilians and gang members.',
+    stats: '204 mm long · 139 mm high · 114 mm barrel · 17 rounds · 9×19 mm · slide locks back when empty',
+    build(g) {
+      P(g, [[-1.02, 0], [1.0, 0], [1.02, -0.12], [0.6, -0.14], [0.5, -0.22], [0.22, -0.26], [-0.05, -0.3], [-0.3, -1.0], [-1.09, -1.0], [-0.82, -0.3], [-0.86, -0.2], [-1.0, -0.1]], 0.28, POLY);
+      gripLines(g, -0.45, -0.95, -0.878, -1.07, -0.104, -0.282, 0.148, 8);
+      R('slide', () => {
+        P(g, [[-0.96, 0.02], [0.9, 0.02], [0.9, 0.26], [0.84, 0.32], [-0.86, 0.32], [-0.96, 0.27]], 0.25, BLUED);
+        ticks(g, -0.9, -0.62, 0.03, 0.29, 0.28, 6, 0.02, BLACK);
+        ticks(g, 0.55, 0.75, 0.03, 0.29, 0.28, 4, 0.02, BLACK);
+        B(g, -0.08, 0.15, 0.36, 0.29, 0.28, BLACK);
+        B(g, -0.9, 0.32, -0.74, 0.38, 0.1, BLACK);
+        B(g, 0.76, 0.32, 0.84, 0.38, 0.06, BLACK);
+      });
+      barrel(g, 0.075, 0.89, 0.1, 0.19, 0, STEEL);
+      B(g, -0.55, -0.015, -0.2, 0.04, 0.3, BLACK);
+      guard2(g, -0.1, 0.5, -0.22, -0.58, 0.28, POLY, 0.07);
+      R('trigger', () => trigger(g, 0.1, -0.1, 0.05, 0.42));
+      R('catch', () => B(g, -0.36, -0.38, -0.26, -0.3, 0.3, BLACK));
+      R('mag', () => {
+        P(g, [[-0.14, -0.5], [-0.88, -0.5], [-1.07, -1.07], [-0.29, -1.07]], 0.24, POLY);
+        B(g, -1.1, -1.12, -0.26, -1.06, 0.27, BLACK);
+      });
+    }
+  },
+  deagle: {
+    name: 'Desert Eagle', tags: ['Heavy pistol', 'Status gun'], kind: 'semi', reload: 'mag', cap: 7, rpm: 360,
+    snd: 'heavy', rc: 'heavy', case: 'pistol', lock: true, travel: 0.3,
+    muzzle: [1.49, 0.3], eject: [-0.1, 0.5],
+    use: 'Large, flashy handgun. Popular with wealthier characters, gang leaders and anyone wanting a statement weapon. Often seen in heist and gang RP.',
+    stats: 'About 270 mm long · about 2 kg · 7 rounds · .50 AE · gas-operated with a triangular barrel',
+    build(g) {
+      P(g, [[-1.1, 0.02], [1.0, 0.02], [1.04, -0.1], [0.5, -0.14], [0.34, -0.2], [0.05, -0.26], [-0.25, -1.08], [-1.12, -1.08], [-0.85, -0.26], [-0.95, -0.14], [-1.08, -0.06]], 0.3, BLACK);
+      P(g, [[-0.9, -0.3], [0.0, -0.3], [-0.22, -1.04], [-1.08, -1.04]], 0.03, POLY, 0, 0, 0.16);
+      P(g, [[-0.9, -0.3], [0.0, -0.3], [-0.22, -1.04], [-1.08, -1.04]], 0.03, POLY, 0, 0, -0.16);
+      gripLines(g, -0.45, -0.95, -0.913, -1.077, -0.02, -0.2, 0.178, 9);
+      R('slide', () => {
+        P(g, [[-1.2, 0.02], [0.88, 0.02], [0.88, 0.5], [-1.1, 0.5], [-1.2, 0.38]], 0.28, STEEL);
+        ticks(g, -1.15, -0.95, 0.04, 0.46, 0.3, 5, 0.02, BLACK);
+        B(g, -0.35, 0.22, 0.3, 0.46, 0.3, BLACK);
+        B(g, -1.0, 0.5, 0.85, 0.55, 0.12, STEEL);
+        ticks(g, -0.7, 0.8, 0.5, 0.56, 0.14, 16, 0.025, BLACK);
+        B(g, -1.15, 0.5, -1.02, 0.58, 0.1, BLACK);
+      });
+      P(g, [[0.88, 0.02], [1.45, 0.1], [1.45, 0.52], [0.88, 0.52]], 0.24, BLACK);
+      barrel(g, 0.1, 0.66, 0.83, 0.3, 0, BLACK);
+      B(g, 0.88, 0.52, 1.45, 0.57, 0.12, STEEL);
+      ticks(g, 0.95, 1.4, 0.52, 0.58, 0.14, 10, 0.02, BLACK);
+      B(g, 1.35, 0.57, 1.43, 0.66, 0.05, BLACK);
+      guard2(g, -0.08, 0.5, -0.2, -0.6, 0.3, BLACK, 0.08);
+      R('trigger', () => trigger(g, 0.08, -0.1, 0.05, 0.42));
+      R('catch', () => B(g, -0.34, -0.38, -0.24, -0.3, 0.31, STEEL));
+      R('mag', () => {
+        P(g, [[-0.1, -0.55], [-0.9, -0.55], [-1.1, -1.15], [-0.27, -1.15]], 0.26, BLACK);
+        B(g, -1.13, -1.19, -0.24, -1.13, 0.3, BLACK);
+      });
+    }
+  },
+  m1911: {
+    name: 'Colt M1911', tags: ['Pistol', 'Classic / Police'], kind: 'semi', reload: 'mag', cap: 7, rpm: 420,
+    snd: 'pistol', rc: 'heavy', case: 'pistol', lock: true, travel: 0.3,
+    muzzle: [1.0, 0.16], eject: [-0.1, 0.3],
+    use: 'Classic .45 pistol. Common for detectives, older characters and mafia or old-school gang RP.',
+    stats: '216 mm long · about 1.1 kg · 7 rounds · .45 ACP · steel frame, wood grips, external hammer',
+    build(g) {
+      P(g, [[-1.0, 0.0], [0.95, 0.0], [0.97, -0.1], [0.55, -0.12], [0.4, -0.2], [0.22, -0.22], [0.0, -0.26], [-0.24, -0.98], [-1.05, -0.98], [-0.82, -0.28], [-0.9, -0.18], [-1.0, -0.08]], 0.26, BLUED);
+      [0.14, -0.14].forEach(z => {
+        P(g, [[-0.82, -0.3], [-0.05, -0.3], [-0.24, -0.94], [-1.02, -0.94]], 0.03, WOOD, 0, 0, z);
+        C(g, 0.05, 0.012, BRASS, -0.45, -0.58, z * 1.2, 'z', 16);
+      });
+      R('slide', () => {
+        P(g, [[-0.92, 0.02], [0.9, 0.02], [0.92, 0.12], [0.92, 0.28], [0.86, 0.3], [-0.88, 0.3], [-0.92, 0.2]], 0.24, BLUED);
+        ticks(g, -0.88, -0.55, 0.03, 0.27, 0.26, 7, 0.02, BLACK);
+        B(g, 0.0, 0.12, 0.5, 0.27, 0.26, BLACK);
+        B(g, -0.88, 0.3, -0.78, 0.36, 0.1, BLACK);
+        B(g, 0.8, 0.3, 0.88, 0.35, 0.05, BLACK);
+      });
+      R('hammer', () => P(g, [[-1.0, 0.12], [-0.9, 0.12], [-0.88, 0.34], [-0.98, 0.34], [-1.04, 0.28]], 0.06, STEEL));
+      setPivot(g, 'hammer', -0.93, 0.14);
+      barrel(g, 0.065, 0.88, 0.12, 0.16, 0, STEEL);
+      C(g, 0.1, 0.1, STEEL, 0.88, 0.16, 0);
+      guard2(g, -0.1, 0.46, -0.2, -0.5, 0.26, BLUED, 0.06);
+      R('trigger', () => trigger(g, 0.1, -0.08, 0.05, 0.3));
+      R('catch', () => B(g, -0.22, -0.36, -0.12, -0.3, 0.28, BLACK));
+      R('mag', () => {
+        P(g, [[-0.12, -0.55], [-0.9, -0.55], [-1.03, -1.02], [-0.27, -1.02]], 0.2, STEEL);
+        B(g, -1.06, -1.06, -0.25, -1.0, 0.24, BLACK);
+      });
+    }
+  },
+  taser: {
+    name: 'Taser X26', tags: ['Non-lethal', 'Police / Factions'], kind: 'taser', reload: 'taser', cap: 1, rpm: 60,
+    snd: 'taser', rc: 'taser', case: 'pistol', lock: false,
+    muzzle: [0.9, 0.28], eject: [0.5, 0.2],
+    use: 'Used for arrests and subduing suspects without killing them. Mostly police and security factions, and criminals who stun people during robberies or kidnappings.',
+    stats: 'About 160 mm long · one cartridge, two probes · reload = swap the cartridge · non-lethal',
+    build(g) {
+      P(g, [[-0.8, 0.0], [0.5, 0.0], [0.52, 0.55], [-0.7, 0.58], [-0.84, 0.4]], 0.24, YELLOW);
+      P(g, [[-0.8, 0.05], [-0.05, 0.05], [-0.28, -1.0], [-0.95, -0.92]], 0.2, POLY);
+      gripLines(g, -0.2, -0.8, -0.82, -0.95, -0.09, -0.26, 0.108, 6);
+      B(g, -0.5, 0.55, -0.3, 0.6, 0.1, RED);
+      B(g, 0.1, 0.55, 0.4, 0.6, 0.08, BLACK);
+      guard2(g, -0.08, 0.4, 0.0, -0.38, 0.2, YELLOW, 0.06);
+      R('trigger', () => trigger(g, 0.05, -0.02, 0.04, 0.32));
+      R('mag', () => {
+        P(g, [[0.5, 0.0], [0.88, 0.02], [0.88, 0.55], [0.5, 0.55]], 0.2, BLACK);
+        B(g, 0.52, 0.2, 0.88, 0.28, 0.21, YELLOW);
+      });
+      R('probes', () => {
+        C(g, 0.022, 0.2, STAINLESS, 0.9, 0.14, 0);
+        C(g, 0.022, 0.2, STAINLESS, 0.9, 0.42, 0);
+      });
+    }
+  },
+  revolver: {
+    name: 'Revolver (S&W 686)', tags: ['Revolver', 'Western / Sheriff'], kind: 'revolver', reload: 'revolver', cap: 6, rpm: 220,
+    snd: 'heavy', rc: 'heavy', case: 'pistol', lock: false,
+    muzzle: [1.4, 0.44], eject: [-0.03, 0.2], spill: [-0.03, 0.0],
+    use: 'Common in western and old-west RP, and in some police and sheriff roles. Also a favourite of classic gang characters.',
+    stats: 'About 240 mm long (4 inch barrel) · 6 rounds · .357 Magnum · swing-out cylinder',
+    build(g) {
+      P(g, [[-0.62, 0.38], [0.45, 0.38], [0.45, 0.52], [-0.62, 0.52]], 0.16, STAINLESS);
+      P(g, [[-0.64, 0.52], [-0.3, 0.52], [-0.3, -0.1], [-0.64, -0.1]], 0.16, STAINLESS);
+      P(g, [[0.2, -0.04], [0.46, -0.02], [0.5, 0.52], [0.2, 0.52]], 0.16, STAINLESS);
+      P(g, [[-0.3, -0.1], [0.2, -0.04], [0.2, 0.02], [-0.3, 0.0]], 0.16, STAINLESS);
+      B(g, -0.3, 0.0, 0.2, 0.38, 0.14, BLACK);
+      P(g, [[-0.28, -0.1], [-0.66, -0.1], [-1.0, -0.92], [-0.55, -1.0]], 0.2, WOOD);
+      [0.11, -0.11].forEach(z => C(g, 0.045, 0.012, BRASS, -0.6, -0.5, z, 'z', 16));
+      R('hammer', () => P(g, [[-0.72, 0.34], [-0.6, 0.4], [-0.58, 0.58], [-0.66, 0.6], [-0.74, 0.5]], 0.06, BLUED));
+      setPivot(g, 'hammer', -0.6, 0.34);
+      B(g, -0.58, 0.52, -0.42, 0.6, 0.08, BLACK);
+      barrel(g, 0.07, 1.0, 0.4, 0.44, 0, STAINLESS);
+      P(g, [[0.45, 0.18], [1.2, 0.24], [1.2, 0.36], [0.45, 0.36]], 0.12, STAINLESS);
+      C(g, 0.03, 0.7, STEEL, 0.8, 0.14, 0);
+      B(g, 1.28, 0.51, 1.38, 0.62, 0.05, BLACK);
+      B(g, 1.3, 0.55, 1.36, 0.6, 0.06, RED);
+      guard2(g, -0.36, 0.2, -0.08, -0.5, 0.16, STAINLESS, 0.06);
+      R('trigger', () => trigger(g, -0.1, -0.04, 0.04, 0.34));
+      const crane = new THREE.Group(); crane.position.set(0.2, 0.02, 0); g.add(crane);
+      const cyl = new THREE.Group(); cyl.position.set(-0.03 - 0.2, 0.2 - 0.02, 0); crane.add(cyl);
+      g.roles = g.roles || {}; g.roles.crane = crane; g.roles.cylinder = cyl;
+      C(cyl, 0.2, 0.4, STAINLESS, 0, 0, 0, 'x', 32);
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3 + Math.PI / 6;
+        C(cyl, 0.04, 0.3, BLACK, 0, Math.cos(a) * 0.2, Math.sin(a) * 0.2, 'x', 10);
+        const b = i * Math.PI / 3;
+        C(cyl, 0.045, 0.02, BLACK, 0.205, Math.cos(b) * 0.12, Math.sin(b) * 0.12, 'x', 14);
+      }
+    }
+  },
+  mac10: {
+    name: 'Compact SMG (Uzi-style)', tags: ['Compact SMG', 'Gang / Robbery'], kind: 'auto', reload: 'mag', cap: 32, rpm: 950,
+    snd: 'smg', rc: 'smg', case: 'pistol', lock: true, travel: 0.3,
+    muzzle: [2.3, 0.4], eject: [-0.3, 0.55], ejDir: [0.3, 1.0, 1.4],
+    use: 'Small, fast automatic weapon for close quarters. Typical for gangs, robbery crews and undercover roles in RP.',
+    stats: 'About 470 mm long (stock folded) · 32-round magazine through the grip · open-bolt, full-auto · 9 mm',
+    build(g) {
+      P(g, [[-2.3, 0.12], [1.3, 0.12], [1.3, 0.66], [-2.3, 0.66]], 0.3, BLUED);
+      B(g, -2.3, 0.66, 1.0, 0.74, 0.22, BLUED);
+      B(g, -2.35, -0.02, -0.7, 0.06, 0.3, BLUED);
+      portBolt(g, -0.7, 0.3, 0.3, 0.55, 0.3, -0.1, 0.25, 0.33, 0.52);
+      C(g, 0.17, 0.8, BLUED, 1.7, 0.4, 0);
+      barrel(g, 0.07, 0.35, 1.95, 0.4, 0, BLACK);
+      B(g, 1.9, 0.56, 2.0, 0.84, 0.02, BLUED, 0.1);
+      B(g, 1.9, 0.56, 2.0, 0.84, 0.02, BLUED, -0.1);
+      B(g, -1.8, 0.74, -1.7, 0.86, 0.1, BLACK);
+      P(g, [[-0.8, 0.12], [-0.1, 0.12], [-0.18, -1.0], [-0.88, -1.0]], 0.22, POLY);
+      P(g, [[0.7, 0.12], [1.25, 0.12], [1.2, -0.45], [0.75, -0.5]], 0.2, POLY);
+      guard2(g, -0.1, 0.7, 0.12, -0.2, 0.16, BLUED, 0.05);
+      R('trigger', () => trigger(g, 0.0, 0.1, 0.04, 0.26));
+      R('catch', () => B(g, -0.3, -0.12, -0.2, -0.04, 0.24, BLACK));
+      R('mag', () => {
+        P(g, [[-0.76, -0.2], [-0.14, -0.2], [-0.2, -1.75], [-0.82, -1.75]], 0.2, BLUED);
+        B(g, -0.84, -1.8, -0.18, -1.75, 0.24, BLACK);
+      });
+    }
+  },
+  mp5: {
+    name: 'MP5 (SMG)', tags: ['SMG', 'SWAT / Police'], kind: 'auto', reload: 'mag', cap: 30, rpm: 800,
+    snd: 'smg', rc: 'smg', case: 'pistol', lock: false, travel: 0.6,
+    muzzle: [3.7, 0.38], eject: [0.8, 0.5], ejDir: [0.3, 1.0, 1.4],
+    use: 'Standard police and SWAT submachine gun in RP. Also used by gangs and security factions for close-quarters fights.',
+    stats: 'About 660 mm long (stock extended) · 30-round curved magazine · roller-delayed blowback · 9 mm',
+    build(g) {
+      C(g, 0.29, 2.5, POLY, 0.35, 0.38, 0);
+      C(g, 0.3, 0.1, BLACK, -0.9, 0.38, 0);
+      C(g, 0.13, 0.18, BLACK, -0.5, 0.8, 0, 'z');
+      B(g, -0.6, 0.62, -0.3, 0.7, 0.1, BLACK);
+      C(g, 0.27, 1.4, POLY, 2.3, 0.38, 0);
+      ticks(g, 1.85, 2.8, 0.22, 0.54, 0.56, 6, 0.04, BLACK);
+      barrel(g, 0.055, 0.8, 2.9, 0.38, 0, BLUED);
+      barrel(g, 0.13, 0.08, 3.4, 0.38, 0, BLACK);
+      B(g, 3.42, 0.5, 3.46, 0.68, 0.04, BLACK);
+      P(g, [[-0.9, 0.56], [-3.0, 0.4], [-3.0, 0.44], [-0.9, 0.6]], 0.03, STEEL, 0, 0, 0.1);
+      P(g, [[-0.9, 0.56], [-3.0, 0.4], [-3.0, 0.44], [-0.9, 0.6]], 0.03, STEEL, 0, 0, -0.1);
+      P(g, [[-0.9, 0.18], [-2.9, 0.02], [-2.9, 0.06], [-0.9, 0.22]], 0.03, STEEL, 0, 0, 0.1);
+      P(g, [[-0.9, 0.18], [-2.9, 0.02], [-2.9, 0.06], [-0.9, 0.22]], 0.03, STEEL, 0, 0, -0.1);
+      P(g, [[-3.0, 0.46], [-3.1, 0.46], [-3.12, -0.1], [-3.02, -0.12]], 0.18, BLACK);
+      P(g, [[-0.55, 0.1], [-0.05, 0.1], [-0.28, -0.92], [-0.78, -0.85]], 0.18, POLY);
+      gripLines(g, -0.2, -0.7, -0.62, -0.74, -0.12, -0.26, 0.1, 5);
+      P(g, [[0.45, 0.1], [1.05, 0.1], [1.05, -0.15], [0.45, -0.15]], 0.22, POLY);
+      guard2(g, -0.12, 0.45, 0.1, -0.32, 0.14, POLY, 0.05);
+      R('trigger', () => trigger(g, 0.1, 0.08, 0.04, 0.34));
+      R('charge', () => { B(g, 1.05, 0.5, 1.75, 0.58, 0.06, BLACK, 0.2); S(g, 0.07, BLACK, 1.1, 0.54, 0.22); });
+      R('catch', () => B(g, 0.4, -0.05, 0.5, 0.05, 0.24, STEEL));
+      R('mag', () => P(g, [[0.52, 0.12], [0.98, 0.12], [1.0, -0.5], [1.12, -1.3], [0.74, -1.38], [0.6, -0.5]], 0.16, BLACK));
+    }
+  },
+  p90: {
+    name: 'P90 (Bullpup SMG)', tags: ['Bullpup SMG', 'Special forces RP'], kind: 'auto', reload: 'mag', cap: 50, rpm: 900,
+    snd: 'smg', rc: 'smg', case: 'pistol', lock: false, travel: 0.4,
+    muzzle: [1.75, 0.3], eject: [-0.2, -0.1], ejDir: [0.2, -0.5, 0.4],
+    magDir: [-1, 0.35, 0], magDist: 1.8,
+    use: 'Futuristic bullpup SMG with a top-mounted magazine. Mostly used by special forces, elite units and high-tech faction storylines.',
+    stats: 'About 400 mm long · 50-round translucent top magazine · bullpup · 5.7×28 mm',
+    build(g) {
+      PH(g, [[-2.0, 0.64], [1.1, 0.64], [1.38, 0.5], [1.38, 0.12], [0.62, 0.12], [0.62, -0.7], [0.12, -0.7], [0.08, -0.3], [-0.9, -0.5], [-2.0, -0.3]],
+        [[-1.15, -0.02], [-0.2, -0.02], [-0.3, -0.3], [-1.1, -0.3]], 0.22, POLY);
+      barrel(g, 0.045, 0.35, 1.4, 0.3, 0, BLACK);
+      barrel(g, 0.07, 0.2, 1.55, 0.3, 0, BLACK);
+      P(g, [[-0.4, 0.62], [0.7, 0.62], [0.7, 1.0], [-0.4, 1.0]], 0.16, POLY);
+      B(g, -0.35, 0.82, 0.65, 0.95, 0.17, BLACK);
+      R('trigger', () => trigger(g, -0.3, -0.02, 0.04, 0.26));
+      R('charge', () => B(g, 0.9, 0.64, 1.2, 0.74, 0.1, BLACK));
+      R('mag', () => {
+        const m = P(g, [[-1.75, 0.64], [0.9, 0.64], [0.95, 0.78], [-1.7, 0.8]], 0.2, 0x59534a);
+        m.material.transparent = true; m.material.opacity = 0.65;
+      });
+    }
+  },
+  ak47: {
+    name: 'AK-47', tags: ['Assault rifle', 'Military / Factions'], kind: 'auto', reload: 'mag', cap: 30, rpm: 600,
+    snd: 'rifle', rc: 'rifle', case: 'rifle', lock: false, travel: 0.55,
+    muzzle: [4.5, 0.4], eject: [0.5, 0.55], ejDir: [0.5, 1.2, 1.6],
+    use: 'Rugged assault rifle. Very common in faction wars, cartel and gang storylines, and military RP.',
+    stats: 'About 880 mm long · 30-round curved magazine · gas-operated, wooden furniture · 7.62×39 mm',
+    build(g) {
+      P(g, [[-1.3, 0.0], [1.5, 0.0], [1.5, 0.64], [-1.3, 0.64]], 0.22, BLUED);
+      P(g, [[-1.3, 0.64], [1.4, 0.64], [1.4, 0.72], [-1.2, 0.72]], 0.2, BLUED);
+      B(g, 1.4, 0.0, 1.7, 0.62, 0.2, BLUED);
+      B(g, 1.6, 0.64, 2.1, 0.76, 0.12, STEEL);
+      P(g, [[-1.3, 0.6], [-4.25, 0.32], [-4.25, -0.55], [-1.3, 0.0]], 0.18, WOOD);
+      B(g, -4.3, -0.55, -4.22, 0.32, 0.2, STEEL);
+      P(g, [[-1.05, 0.0], [-0.5, 0.0], [-0.78, -0.9], [-1.2, -0.85]], 0.18, WOOD);
+      P(g, [[1.5, 0.05], [3.3, 0.1], [3.3, 0.46], [1.5, 0.46]], 0.22, WOOD);
+      P(g, [[1.9, 0.5], [3.3, 0.5], [3.3, 0.72], [1.9, 0.72]], 0.2, WOOD);
+      B(g, 3.3, 0.3, 3.65, 0.6, 0.14, BLUED);
+      barrel(g, 0.07, 2.9, 1.5, 0.4, 0, BLUED);
+      barrel(g, 0.09, 0.25, 4.25, 0.4, 0, BLUED);
+      B(g, 4.0, 0.35, 4.22, 0.62, 0.14, BLUED);
+      B(g, 4.06, 0.62, 4.14, 0.92, 0.04, BLUED);
+      B(g, -0.6, 0.3, 0.6, 0.38, 0.03, BLUED, 0.125);
+      guard2(g, -0.5, 0.3, 0.0, -0.4, 0.14, BLUED, 0.05);
+      R('trigger', () => trigger(g, -0.25, 0.0, 0.04, 0.3));
+      R('slide', () => { B(g, 0.3, 0.5, 0.75, 0.58, 0.06, STEEL, 0.15); S(g, 0.05, STEEL, 0.7, 0.54, 0.2); });
+      R('catch', () => B(g, 0.3, -0.04, 0.4, 0.06, 0.22, BLUED));
+      R('mag', () => P(g, [[0.25, 0.05], [0.8, 0.05], [0.9, -0.55], [1.3, -1.05], [1.55, -1.22], [1.05, -1.38], [0.65, -1.08], [0.3, -0.5]], 0.14, BLUED));
+    }
+  },
+  m4: {
+    name: 'M4 Carbine', tags: ['Assault rifle', 'SWAT / Military'], kind: 'auto', reload: 'mag', cap: 30, rpm: 750,
+    snd: 'rifle', rc: 'rifle', case: 'rifle', lock: true, travel: 0.45,
+    muzzle: [4.62, 0.5], eject: [0.45, 0.6], ejDir: [0.4, 1.2, 1.6],
+    use: 'Modern carbine used by SWAT, military and tactical teams in RP. Common in police raids and military storylines.',
+    stats: 'About 840 mm long (stock extended) · 368 mm barrel · 30-round magazine · bolt holds open when empty · 5.56 NATO',
+    build(g) {
+      P(g, [[-1.0, 0.34], [1.25, 0.34], [1.25, 0.74], [-1.0, 0.74]], 0.2, BLACK);
+      B(g, -1.0, 0.74, 3.05, 0.8, 0.1, BLACK);
+      ticks(g, -0.95, 3.0, 0.74, 0.82, 0.1, 28, 0.03, POLY);
+      P(g, [[-1.0, -0.12], [1.15, -0.12], [1.15, 0.34], [-1.0, 0.34]], 0.2, POLY);
+      C(g, 0.1, 2.6, POLY, -2.3, 0.42, 0);
+      P(g, [[-1.05, 0.52], [-3.65, 0.44], [-3.75, -0.4], [-3.1, -0.35], [-1.05, 0.02]], 0.15, POLY);
+      B(g, -3.8, -0.42, -3.72, 0.46, 0.17, BLACK);
+      P(g, [[-0.65, 0.0], [-0.22, 0.0], [-0.45, -0.82], [-0.9, -0.76]], 0.16, POLY);
+      gripLines(g, -0.15, -0.65, -0.7, -0.85, -0.25, -0.42, 0.088, 5);
+      C(g, 0.18, 1.9, POLY, 2.15, 0.48, 0);
+      ticks(g, 1.35, 3.0, 0.3, 0.66, 0.38, 8, 0.025, BLACK);
+      B(g, 3.1, 0.36, 3.4, 0.66, 0.12, BLUED);
+      B(g, 3.22, 0.66, 3.3, 1.0, 0.04, BLACK);
+      B(g, -0.4, 0.8, -0.2, 0.95, 0.08, BLACK);
+      barrel(g, 0.05, 1.2, 3.1, 0.5, 0, BLUED);
+      barrel(g, 0.075, 0.32, 4.3, 0.5, 0, BLACK);
+      portBolt(g, 0.0, 0.8, 0.45, 0.7, 0.22, 0.45, 0.8, 0.48, 0.62);
+      guard2(g, -0.2, 0.4, -0.12, -0.5, 0.14, POLY, 0.05);
+      R('trigger', () => trigger(g, 0.0, -0.08, 0.04, 0.35));
+      R('charge', () => P(g, [[-1.05, 0.74], [-0.7, 0.74], [-0.7, 0.86], [-1.05, 0.86]], 0.14, BLACK));
+      R('catch', () => B(g, 0.78, 0.0, 0.9, 0.12, 0.22, STEEL));
+      R('mag', () => P(g, [[0.3, -0.12], [0.75, -0.12], [0.84, -0.7], [0.95, -1.35], [0.5, -1.4], [0.4, -0.7]], 0.14, BLACK));
+    }
+  },
+  hunting: {
+    name: 'Bolt-Action Hunting Rifle', tags: ['Rifle', 'Rural / Hunting RP'], kind: 'bolt', reload: 'bolt', cap: 5, rpm: 60, cycle: 1150,
+    snd: 'rifle', rc: 'sniper', case: 'rifle',
+    muzzle: [6.3, 0.52], eject: [-0.3, 0.62], ejDir: [-0.2, 1.0, 1.6],
+    use: 'Used in hunting and rural RP, and for long-range shooting in some faction storylines.',
+    stats: 'About 1100 mm long · 5 rounds · bolt action · wooden stock with scope · .30-06',
+    build(g) {
+      P(g, [[-4.8, 0.5], [-3.2, 0.58], [-1.3, 0.52], [-0.9, 0.38], [-0.5, 0.2], [-0.5, -0.15], [-1.0, -0.3], [-1.3, -0.8], [-1.8, -0.84], [-2.0, -0.35], [-3.4, -0.4], [-4.8, -0.55]], 0.16, WOOD);
+      B(g, -4.86, -0.55, -4.78, 0.5, 0.18, BLACK);
+      P(g, [[-0.5, -0.15], [3.3, -0.1], [3.3, 0.46], [-0.5, 0.46]], 0.2, WOOD);
+      P(g, [[-0.9, 0.38], [0.9, 0.38], [0.9, 0.66], [-0.9, 0.66]], 0.17, BLUED);
+      barrel(g, 0.065, 5.6, 0.7, 0.52, 0, BLUED);
+      B(g, -0.4, 0.66, -0.25, 0.98, 0.14, BLACK);
+      B(g, 0.5, 0.66, 0.65, 0.98, 0.14, BLACK);
+      C(g, 0.1, 2.8, BLACK, 0.1, 1.05, 0);
+      C(g, 0.15, 0.6, BLACK, 1.8, 1.05, 0);
+      C(g, 0.13, 0.5, BLACK, -1.45, 1.05, 0);
+      C(g, 0.05, 0.14, BLACK, 0.1, 1.2, 0);
+      guard2(g, -1.0, -0.1, -0.12, -0.62, 0.1, STEEL, 0.06);
+      R('trigger', () => trigger(g, -0.55, -0.14, 0.05, 0.4));
+      R('bolt', () => {
+        C(g, 0.065, 0.9, BLUED, -0.55, 0.52, 0);
+        C(g, 0.025, 0.3, STEEL, -0.55, 0.52, 0.18, 'z');
+        S(g, 0.07, STEEL, -0.55, 0.52, 0.34);
+      });
+      setPivot(g, 'bolt', 0, 0.52);
+    }
+  },
+  sniper: {
+    name: 'Sniper Rifle (AWP-style)', tags: ['Long range', 'Military / Assassin RP'], kind: 'bolt', reload: 'mag', cap: 5, rpm: 60, cycle: 1150, detMag: true,
+    snd: 'sniper', rc: 'sniper', case: 'rifle',
+    muzzle: [6.85, 0.52], eject: [-0.4, 0.7], ejDir: [-0.2, 1.0, 1.6],
+    magDir: [0, -1, 0], magDist: 1.3,
+    use: 'Long-range precision rifle with a scope and bipod. Used by snipers in military and faction RP, and for hits and assassinations in crime storylines.',
+    stats: 'About 1200 mm long · 5-round detachable magazine · bolt action · .338 Lapua Magnum · bipod',
+    build(g) {
+      PH(g, [[-5.3, 0.7], [-3.5, 0.72], [-1.0, 0.5], [-0.9, 0.1], [-1.1, -0.2], [-1.45, -0.95], [-2.05, -1.0], [-2.2, -0.45], [-3.3, -0.35], [-3.7, -0.75], [-4.2, -0.8], [-4.4, -0.2], [-5.3, -0.15]],
+        [[-3.9, 0.4], [-2.6, 0.38], [-2.55, 0.0], [-3.85, 0.02]], 0.16, OD);
+      B(g, -5.36, -0.15, -5.28, 0.7, 0.18, BLACK);
+      P(g, [[-1.0, 0.35], [1.0, 0.35], [1.0, 0.68], [-1.0, 0.68]], 0.2, BLACK);
+      P(g, [[-0.2, -0.05], [3.4, 0.0], [3.4, 0.45], [-0.2, 0.45]], 0.22, OD);
+      barrel(g, 0.07, 5.3, 1.0, 0.52, 0, BLUED);
+      barrel(g, 0.1, 0.55, 6.3, 0.52, 0, BLACK);
+      C(g, 0.1, 3.2, BLACK, 0.2, 1.08, 0);
+      C(g, 0.2, 0.9, BLACK, 2.2, 1.08, 0);
+      C(g, 0.15, 0.6, BLACK, -1.7, 1.08, 0);
+      C(g, 0.06, 0.16, BLACK, 0.2, 1.25, 0);
+      C(g, 0.06, 0.16, BLACK, 0.2, 1.08, 0.16, 'z');
+      B(g, -0.6, 0.68, -0.4, 1.0, 0.16, BLACK);
+      B(g, 0.7, 0.68, 0.9, 1.0, 0.16, BLACK);
+      B(g, 2.9, -0.05, 3.3, 0.05, 0.3, BLACK);
+      [0.15, -0.15].forEach(z => {
+        P(g, [[3.0, -0.05], [3.08, -0.05], [3.3, -1.5], [3.2, -1.5]], 0.05, STEEL, 0, 0, z);
+        B(g, 3.15, -1.55, 3.4, -1.48, 0.07, BLACK, z);
+      });
+      guard2(g, -1.0, -0.2, 0.0, -0.5, 0.1, BLACK, 0.06);
+      R('trigger', () => trigger(g, -0.62, -0.02, 0.05, 0.36));
+      R('bolt', () => {
+        C(g, 0.06, 0.8, STEEL, -0.9, 0.52, 0);
+        C(g, 0.025, 0.4, STEEL, -0.9, 0.52, 0.2, 'z');
+        S(g, 0.08, STEEL, -0.9, 0.52, 0.4);
+      });
+      setPivot(g, 'bolt', 0, 0.52);
+      R('catch', () => B(g, -0.9, -0.05, -0.8, 0.05, 0.2, BLACK));
+      R('mag', () => P(g, [[-0.8, 0.05], [-0.1, 0.05], [-0.1, -0.55], [-0.8, -0.55]], 0.18, BLACK));
+    }
+  },
+  pump: {
+    name: 'Pump Shotgun (870-style)', tags: ['Shotgun', 'Robbery / Breaching'], kind: 'pump', reload: 'pump', cap: 6, rpm: 60, cycle: 850,
+    snd: 'shotgun', rc: 'shotgun', case: 'shell',
+    muzzle: [6.1, 0.52], eject: [0.5, 0.55], ejDir: [0.4, 1.0, 1.6],
+    use: 'Strong at close range. Common in robberies, home-invasion storylines, and breaching with police and SWAT.',
+    stats: 'About 1060 mm long · 5+1 tube magazine · pump action · 12 gauge',
+    build(g) {
+      P(g, [[-4.5, 0.55], [-1.0, 0.65], [-0.9, 0.3], [-1.05, -0.02], [-1.4, -0.12], [-4.5, -0.55]], 0.18, WOOD);
+      B(g, -4.56, -0.55, -4.48, 0.55, 0.2, BLACK);
+      P(g, [[-1.0, 0.15], [1.1, 0.15], [1.1, 0.68], [-1.0, 0.68]], 0.2, BLUED);
+      B(g, 0.15, 0.35, 0.85, 0.62, 0.22, BLACK);
+      R('bolt', () => B(g, 0.4, 0.38, 0.85, 0.58, 0.23, STEEL));
+      barrel(g, 0.095, 5.0, 1.1, 0.52, 0, BLUED);
+      S(g, 0.03, BRASS, 6.0, 0.63, 0);
+      C(g, 0.075, 4.4, BLUED, 3.3, 0.22, 0);
+      C(g, 0.1, 0.15, BLUED, 5.4, 0.22, 0);
+      guard2(g, -0.85, 0.1, 0.15, -0.2, 0.12, BLACK, 0.06);
+      R('trigger', () => trigger(g, -0.5, 0.13, 0.05, 0.3));
+      R('pump', () => {
+        P(g, [[1.35, 0.05], [3.55, 0.03], [3.55, 0.36], [1.35, 0.38]], 0.26, WOOD);
+        ticks(g, 1.5, 3.4, 0.07, 0.34, 0.28, 8, 0.03, BLACK);
+      });
+    }
+  },
+  doublebarrel: {
+    name: 'Double-Barrel Shotgun', tags: ['Shotgun', 'Classic / Robbery'], kind: 'double', reload: 'double', cap: 2, rpm: 200,
+    snd: 'shotgun', rc: 'shotgun', case: 'shell',
+    muzzle: [5.9, 0.4], eject: [0.7, 0.5], spill: [0.7, 0.5],
+    use: 'Old-fashioned break-action shotgun. Often used by old-west characters, farmers, and robbers in period or rural RP.',
+    stats: 'About 1000 mm long · 2 shots · break action with exposed hammers · 12 gauge',
+    build(g) {
+      P(g, [[-4.4, 0.5], [-1.1, 0.6], [-0.95, 0.32], [-1.1, 0.0], [-1.5, -0.1], [-4.4, -0.55]], 0.18, WOOD);
+      B(g, -4.46, -0.55, -4.38, 0.5, 0.2, BLACK);
+      P(g, [[-1.0, 0.12], [0.85, 0.12], [0.85, 0.6], [-1.0, 0.6]], 0.22, STEEL);
+      B(g, -1.0, 0.6, -0.4, 0.66, 0.06, STEEL);
+      guard2(g, -0.9, -0.05, 0.12, -0.28, 0.1, STEEL, 0.05);
+      R('trigger', () => trigger(g, -0.62, 0.1, 0.04, 0.3));
+      R('trigger2', () => trigger(g, -0.35, 0.1, 0.04, 0.3));
+      const hm = [[-0.78, 0.58], [-0.62, 0.58], [-0.62, 0.7], [-0.72, 0.8], [-0.9, 0.82], [-0.92, 0.72], [-0.8, 0.68]];
+      R('h1', () => P(g, hm, 0.05, BLUED, 0, 0, 0.12));
+      R('h2', () => P(g, hm, 0.05, BLUED, 0, 0, -0.12));
+      setPivot(g, 'h1', -0.7, 0.6); setPivot(g, 'h2', -0.7, 0.6);
+      g.roles.h1.rotation.z = 0.4; g.roles.h2.rotation.z = 0.4;
+      R('barrels', () => {
+        barrel(g, 0.1, 5.05, 0.85, 0.4, 0.1, BLUED);
+        barrel(g, 0.1, 5.05, 0.85, 0.4, -0.1, BLUED);
+        B(g, 0.85, 0.48, 5.9, 0.52, 0.1, BLUED);
+        P(g, [[0.85, 0.1], [2.9, 0.15], [2.9, 0.36], [0.85, 0.38]], 0.36, WOOD);
+        S(g, 0.03, BRASS, 5.8, 0.54, 0);
+        B(g, 0.7, 0.1, 0.9, 0.2, 0.2, STEEL);
+      });
+      setPivot(g, 'barrels', 0.82, 0.3);
+    }
+  },
+  m249: {
+    name: 'M249 Light Machine Gun', tags: ['LMG', 'Military / Raids'], kind: 'auto', reload: 'mag', cap: 100, rpm: 780,
+    snd: 'lmg', rc: 'lmg', case: 'rifle', lock: true, travel: 0.5,
+    muzzle: [6.5, 0.5], eject: [0.3, 0.7], ejDir: [0.4, 1.0, 1.6],
+    magDir: [0, -1, 0], magDist: 1.8,
+    use: 'Heavy, sustained-fire weapon with a belt or box feed. Shows up in military, heist-raid and large faction battles.',
+    stats: 'About 1040 mm long · belt-fed from a box (100-round box shown) · open bolt, gas-operated · 5.56 NATO · bipod',
+    build(g) {
+      P(g, [[-1.3, 0.2], [1.3, 0.2], [1.3, 0.78], [-1.3, 0.78]], 0.26, BLACK);
+      R('cover', () => P(g, [[-0.2, 0.78], [1.2, 0.78], [1.2, 0.92], [-0.2, 0.92]], 0.26, BLACK));
+      setPivot(g, 'cover', -0.2, 0.8);
+      B(g, -1.0, 0.92, -0.8, 1.02, 0.08, BLACK);
+      P(g, [[-1.3, 0.65], [-4.0, 0.55], [-4.05, -0.45], [-3.4, -0.5], [-1.3, 0.15]], 0.22, POLY);
+      B(g, -4.1, -0.45, -4.02, 0.55, 0.24, BLACK);
+      P(g, [[-0.95, 0.2], [-0.5, 0.2], [-0.7, -0.7], [-1.12, -0.65]], 0.2, POLY);
+      P(g, [[1.3, 0.2], [3.1, 0.25], [3.1, 0.78], [1.3, 0.8]], 0.24, POLY);
+      ticks(g, 1.5, 2.9, 0.3, 0.7, 0.26, 7, 0.04, BLACK);
+      barrel(g, 0.09, 3.3, 3.0, 0.5, 0, BLUED);
+      barrel(g, 0.11, 0.4, 6.1, 0.5, 0, BLACK);
+      P(g, [[3.3, 0.55], [3.42, 0.55], [3.5, 1.05], [4.3, 1.05], [4.38, 0.55], [4.5, 0.55], [4.4, 1.18], [3.4, 1.18]], 0.06, BLACK);
+      B(g, 4.6, 0.3, 4.9, 0.4, 0.4, BLACK);
+      [0.18, -0.18].forEach(z => P(g, [[4.7, 0.35], [4.78, 0.35], [5.0, -0.95], [4.92, -0.95]], 0.04, STEEL, 0, 0, z));
+      guard2(g, -0.5, 0.4, 0.2, -0.2, 0.2, BLACK, 0.06);
+      R('trigger', () => trigger(g, -0.05, 0.18, 0.05, 0.3));
+      R('slide', () => { B(g, 0.1, 0.5, 0.7, 0.6, 0.06, STEEL, 0.17); S(g, 0.05, STEEL, 0.65, 0.55, 0.22); });
+      R('mag', () => {
+        P(g, [[-0.3, -0.9], [1.2, -0.9], [1.2, 0.2], [-0.3, 0.2]], 0.4, OD);
+        ticks(g, -0.1, 1.0, -0.8, 0.1, 0.42, 5, 0.04, BLACK);
+      });
+    }
+  },
+};
+</script>
+<script>
+// =====================================================================
+// Audio (all sounds are synthesized, no files needed)
+// =====================================================================
+let AC = null, out = null, verbIn = null, noiseBuf = null, muted = false;
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  AC = new Ctx();
+  const comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 6;
+  out = AC.createGain(); out.gain.value = muted ? 0 : 0.9;
+  out.connect(comp); comp.connect(AC.destination);
+  const len = Math.floor(AC.sampleRate * 1.8), ib = AC.createBuffer(2, len, AC.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ib.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+  const conv = AC.createConvolver(); conv.buffer = ib;
+  const rg = AC.createGain(); rg.gain.value = 0.45;
+  conv.connect(rg); rg.connect(comp); verbIn = conv;
+  noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+  const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+}
+function noise(d, dur, o) {
+  if (!AC) return;
+  const t = AC.currentTime + d;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const f = AC.createBiquadFilter(); f.type = o.type || 'bandpass'; f.Q.value = o.q || 1;
+  f.frequency.setValueAtTime(o.f, t);
+  if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(o.g || 0.5, t + (o.atk || 0.002));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(out);
+  if (o.send) { const sg = AC.createGain(); sg.gain.value = o.send; g.connect(sg); sg.connect(verbIn); }
+  s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
+}
+function tone(d, dur, o) {
+  if (!AC) return;
+  const t = AC.currentTime + d;
+  const os = AC.createOscillator(); os.type = o.type || 'sine';
+  os.frequency.setValueAtTime(o.f0, t);
+  if (o.f1) os.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(o.g, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  os.connect(g); g.connect(out);
+  os.start(t); os.stop(t + dur + 0.05);
+}
+function thunk(d, f, g) { tone(d, 0.1, { f0: f, f1: f * 0.45, g }); noise(d, 0.05, { type: 'lowpass', f: 1200, q: 0.7, g: g * 0.6 }); }
+function metal(d, f, g, dur = 0.14) {
+  tone(d, dur, { f0: f, f1: f * 0.99, g: g * 0.5 });
+  tone(d, dur * 0.6, { f0: f * 1.5, f1: f * 1.49, g: g * 0.25 });
+  noise(d, 0.02, { f, q: 5, g });
+}
+function rub(d, dur, f, g) { noise(d, dur, { f, f2: f * 1.4, q: 0.7, g, atk: dur * 0.35 }); }
+
+const SHOT = {
+  pistol:  { c: [2500, 0.07, 0.9], b: [3200, 250, 0.16, 0.9], t: [180, 55, 0.14, 0.8], tail: 0.5 },
+  heavy:   { c: [2000, 0.10, 1.0], b: [2600, 160, 0.28, 1.0], t: [130, 40, 0.22, 1.0], tail: 0.7 },
+  smg:     { c: [2800, 0.06, 0.8], b: [3000, 300, 0.12, 0.8], t: [200, 60, 0.10, 0.7], tail: 0.3 },
+  rifle:   { c: [2200, 0.09, 1.0], b: [2800, 200, 0.25, 1.0], t: [120, 45, 0.20, 1.0], tail: 0.7 },
+  lmg:     { c: [2000, 0.08, 1.0], b: [2400, 180, 0.22, 1.0], t: [105, 42, 0.18, 1.0], tail: 0.6 },
+  shotgun: { c: [1600, 0.12, 1.0], b: [2200, 120, 0.40, 1.2], t: [90, 32, 0.30, 1.2], tail: 0.8 },
+  sniper:  { c: [1800, 0.14, 1.0], b: [2000, 100, 0.60, 1.2], t: [75, 28, 0.50, 1.3], tail: 1.0 },
+};
+function playShot(k) {
+  if (!AC) return;
+  const p = SHOT[k] || SHOT.pistol, j = 0.93 + Math.random() * 0.14;
+  noise(0, p.c[1], { type: 'highpass', f: p.c[0] * j, q: 0.7, g: p.c[2] * 0.8, send: 0.15 });
+  noise(0, p.b[2], { type: 'lowpass', f: p.b[0] * j, f2: p.b[1], q: 0.8, g: p.b[3], send: p.tail * 0.5 });
+  tone(0, p.t[2], { f0: p.t[0] * j, f1: p.t[1], g: p.t[3] });
+  noise(0.01, p.b[2] * 1.8, { type: 'lowpass', f: 700, f2: 200, q: 0.7, g: 0.35 * p.t[3], send: p.tail });
+}
+const SFX = {
+  shot: playShot,
+  zap() {
+    if (!AC) return;
+    thunk(0, 260, 0.5); noise(0, 0.06, { f: 900, q: 1, g: 0.5 });
+    const t = AC.currentTime + 0.05, dur = 1.0;
+    const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500;
+    const g = AC.createGain(); g.gain.value = 0.0;
+    const lfo = AC.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 38;
+    const lg = AC.createGain(); lg.gain.value = 0.22;
+    lfo.connect(lg); lg.connect(g.gain);
+    g.gain.setValueAtTime(0.22, t); g.gain.linearRampToValueAtTime(0.0, t + dur);
+    s.connect(f); f.connect(g); g.connect(out);
+    s.start(t); s.stop(t + dur); lfo.start(t); lfo.stop(t + dur);
+    tone(0.05, dur * 0.9, { f0: 3200, f1: 2600, g: 0.04, type: 'sawtooth' });
+  },
+  dry() { noise(0, 0.03, { f: 2600, q: 3, g: 0.35 }); tone(0, 0.04, { f0: 900, f1: 400, g: 0.08, type: 'square' }); },
+  release() { noise(0, 0.025, { f: 3200, q: 4, g: 0.45 }); },
+  magOut() { rub(0, 0.2, 900, 0.14); noise(0.02, 0.02, { f: 2000, q: 3, g: 0.3 }); },
+  magRub() { rub(0, 0.18, 700, 0.14); },
+  magIn() { thunk(0, 190, 0.7); noise(0.005, 0.03, { f: 2800, q: 4, g: 0.45 }); },
+  rackBack() { rub(0, 0.14, 2200, 0.25); metal(0.1, 2000, 0.25); },
+  rackFwd() { metal(0, 2300, 0.4); thunk(0, 200, 0.6); },
+  boltUp() { metal(0, 1800, 0.35); rub(0.02, 0.08, 1500, 0.15); },
+  boltBack() { rub(0, 0.18, 1800, 0.22); metal(0.17, 2100, 0.3); },
+  boltFwd() { rub(0, 0.15, 1800, 0.2); thunk(0.15, 210, 0.6); metal(0.15, 2000, 0.3); },
+  boltDown() { metal(0, 1600, 0.4); thunk(0, 170, 0.4); },
+  pumpBack() { rub(0, 0.12, 1400, 0.25); thunk(0.1, 230, 0.55); metal(0.1, 1500, 0.3); },
+  pumpFwd() { rub(0, 0.12, 1400, 0.25); thunk(0.1, 260, 0.7); metal(0.1, 1800, 0.35); },
+  shellIn(style) {
+    if (style === 'shell') { noise(0, 0.04, { f: 2200, q: 2, g: 0.3 }); thunk(0.02, 330, 0.3); metal(0.01, 1800, 0.12, 0.08); }
+    else { metal(0, 3400, 0.3, 0.07); thunk(0.02, 420, 0.2); }
+  },
+  cylOpen() { noise(0, 0.03, { f: 3000, q: 4, g: 0.4 }); rub(0.03, 0.12, 1500, 0.15); thunk(0.14, 240, 0.4); },
+  cylClose() { rub(0, 0.1, 1500, 0.15); thunk(0.1, 200, 0.7); metal(0.1, 2600, 0.35); },
+  breakOpen() { noise(0, 0.03, { f: 2800, q: 4, g: 0.4 }); thunk(0.05, 150, 0.8); rub(0.05, 0.15, 900, 0.2); },
+  breakClose() { rub(0, 0.12, 900, 0.2); thunk(0.12, 170, 0.9); metal(0.12, 2400, 0.4); },
+  cock() { metal(0, 2600, 0.3, 0.06); metal(0.04, 3100, 0.25, 0.05); },
+  tinkle(style) {
+    if (style === 'shell') { thunk(0, 300, 0.2); noise(0, 0.04, { f: 1800, q: 2, g: 0.15 }); return; }
+    metal(0, 3800 + Math.random() * 1500, 0.1, 0.2);
+    metal(0.08, 2900 + Math.random() * 1000, 0.07, 0.15);
+  },
+};
+
+// =====================================================================
+// Scene
+// =====================================================================
+const list = document.getElementById('list');
+const info = document.getElementById('info');
+const wrap = document.getElementById('canvas-wrap');
+const amEl = document.getElementById('am'), cpEl = document.getElementById('cp'), hsEl = document.getElementById('hs');
+
+function fail(m) { wrap.innerHTML = '<div style="padding:24px;color:#f2c500">' + m + '</div>'; throw new Error(m); }
+if (!window.THREE || !THREE.OrbitControls) fail('Could not load the 3D library. Check your connection and reload.');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { fail('Your browser could not start WebGL.'); }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+wrap.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x14110e);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 300);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Studio-style reflections so metal looks like real steel under shop lights.
+(function () {
+  const env = new THREE.Scene(); env.background = new THREE.Color(0x1a1612);
+  const add = (w, h, x, y, z, k) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k * 0.92), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m);
+  };
+  add(14, 8, 0, 12, 0, 6); add(3, 12, 12, 2, 4, 3); add(3, 12, -12, 2, -4, 2.5); add(16, 2, 0, 3, -12, 2);
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(env, 0.03).texture;
+})();
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x2a1c10, 0.35));
+const key = new THREE.DirectionalLight(0xfff1dc, 1.4);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xaabbff, 0.45); fill.position.set(-4, 2, 2); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.4); rim.position.set(0, 2, -4); scene.add(rim);
+const spot = new THREE.SpotLight(0xffe2b0, 1.2, 0, 0.6, 0.6); scene.add(spot); scene.add(spot.target);
+
+// Slatwall back wall, wood shop floor, velvet display pad.
+function slatTex() {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#2a2723'; x.fillRect(0, 0, 64, 128);
+  x.fillStyle = '#0b0a09'; x.fillRect(0, 0, 64, 10);
+  x.fillStyle = '#4a453d'; x.fillRect(0, 10, 64, 2);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 36);
+  return t;
+}
+const wall = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 28, 64, 1, true), new THREE.MeshStandardMaterial({ map: slatTex(), roughness: 0.9, metalness: 0, side: THREE.BackSide }));
+scene.add(wall);
+const shopFloor = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.45, metalness: 0.1 }));
+shopFloor.rotation.x = -Math.PI / 2; shopFloor.receiveShadow = true; scene.add(shopFloor);
+const padGeo = new THREE.CylinderGeometry(4, 4.1, 0.1, 64); padGeo.translate(0, -0.05, 0);
+const floor = new THREE.Mesh(padGeo, new THREE.MeshStandardMaterial({ color: 0x5a1218, roughness: 1, metalness: 0 }));
+floor.receiveShadow = true; scene.add(floor);
+const padRing = new THREE.Mesh(new THREE.TorusGeometry(4.05, 0.03, 8, 96), mat(BRASS));
+padRing.rotation.x = Math.PI / 2; padRing.position.y = -0.02; floor.add(padRing);
+const standMat = new THREE.MeshStandardMaterial({ color: 0xcfd8e0, transparent: true, opacity: 0.45, roughness: 0.08, metalness: 0.1 });
+let stands = [];
+let floorY = -1.2;
+
+function flashTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, '#fff6c0'); gr.addColorStop(0.35, '#ffb000'); gr.addColorStop(1, 'rgba(255,120,0,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const flashMat = new THREE.SpriteMaterial({ map: flashTexture(), transparent: true, depthWrite: false, opacity: 0 });
+const flash = new THREE.Sprite(flashMat);
+const mlight = new THREE.PointLight(0xffaa44, 0, 8);
+
+let current = null, curKey = null, currentView = 'side';
+let anims = [], casings = [], flashT = 0, busy = false, token = 0, nextAt = 0, held = false;
+let st = { ammo: 0, locked: false };
+
+const ease = t => 1 - Math.pow(1 - t, 3);
+const smooth = t => 0.5 - 0.5 * Math.cos(Math.PI * t);
+const sin01 = p => Math.sin(Math.PI * p);
+const lerp = (a, b, p) => a + (b - a) * p;
+
+// Durations are in milliseconds.
+function tween(dur, fn, done) { anims.push({ t0: performance.now(), dur, fn, done }); }
+function mvTo(o, axis, to, dur, ez = smooth) { const from = o.position[axis]; tween(dur, p => { o.position[axis] = lerp(from, to, ez(p)); }); }
+function rtTo(o, axis, to, dur, ez = smooth) { const from = o.rotation[axis]; tween(dur, p => { o.rotation[axis] = lerp(from, to, ez(p)); }); }
+// Schedule steps [ms, fn] for the current gun; all are dropped if the gun changes.
+function T(steps, endMs, fin) {
+  const tok = token;
+  steps.forEach(([ms, fn]) => setTimeout(() => { if (tok === token) fn(); }, ms));
+  setTimeout(() => { if (tok === token) fin(); }, endMs);
+}
+
+function frameCamera(view) {
+  if (!current) return;
+  const s = current.userData.size;
+  const t15 = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const dx = (s.x * 0.5 * 1.3) / (t15 * camera.aspect), dy = (s.y * 0.5 * 1.7) / t15;
+  const d = Math.max(dx, dy, s.x * 0.9) + s.z;
+  const ty = -s.y * 0.1;
+  const pos = {
+    side: [0, ty, d], three: [d * 0.7, ty + d * 0.4, d * 0.65],
+    top: [0, d, 0.001], front: [d, ty, 0],
+  }[view] || [0, ty, d];
+  camera.position.set(pos[0], pos[1], pos[2]);
+  controls.target.set(0, ty, 0);
+  controls.update();
+}
+document.querySelectorAll('[data-view]').forEach(btn => btn.onclick = () => {
+  currentView = btn.dataset.view;
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b === btn));
+  frameCamera(currentView);
+});
+
+function hud(msg) {
+  const gun = GUNS[curKey];
+  amEl.textContent = st.ammo;
+  cpEl.textContent = '/ ' + gun.cap;
+  hsEl.textContent = msg || '';
+}
+
+function resetRoles(g) {
+  Object.values(g.roles || {}).forEach(gr => {
+    if (!gr.userData.p0) return;
+    gr.position.copy(gr.userData.p0);
+    gr.rotation.copy(gr.userData.r0);
+    gr.visible = true;
+  });
+}
+
+function show(k) {
+  token++;
+  if (current) scene.remove(current);
+  stands.forEach(m => scene.remove(m)); stands = [];
+  casings.forEach(c => scene.remove(c.m));
+  anims = []; casings = []; busy = false; held = false; flashT = 0; flashMat.opacity = 0; mlight.intensity = 0;
+  curKey = k;
+  const gun = GUNS[k];
+  ROLE = null;
+  const g = new THREE.Group();
+  gun.build(g);
+  Object.values(g.roles || {}).forEach(gr => { gr.userData.p0 = gr.position.clone(); gr.userData.r0 = gr.rotation.clone(); });
+  const box = new THREE.Box3().setFromObject(g);
+  g.position.sub(box.getCenter(new THREE.Vector3()));
+  g.userData.base = g.position.clone();
+  g.userData.size = box.getSize(new THREE.Vector3());
+  flash.position.set(gun.muzzle[0], gun.muzzle[1], 0);
+  mlight.position.set(gun.muzzle[0] + 0.2, gun.muzzle[1], 0);
+  flashMat.color.set(gun.kind === 'taser' ? 0x7ab8ff : 0xffffff);
+  mlight.color.set(gun.kind === 'taser' ? 0x7ab8ff : 0xffaa44);
+  g.add(flash); g.add(mlight);
+  scene.add(g);
+  current = g;
+
+  const s = g.userData.size, span = Math.max(s.x, s.y, 2);
+  floorY = -s.y / 2 - 0.3;
+  floor.position.y = floorY;
+  const fk = Math.max(1, span / 3.5); floor.scale.set(fk, fk, fk);
+  shopFloor.position.y = floorY - 0.12 * fk; wall.position.y = floorY + 13;
+  g.updateMatrixWorld(true);
+  const meshes = []; g.traverse(o => { if (o.isMesh) meshes.push(o); });
+  const rc = new THREE.Raycaster();
+  [-0.3, 0.3].forEach(f => {
+    rc.set(new THREE.Vector3(f * s.x, floorY - 5, 0), new THREE.Vector3(0, 1, 0));
+    const hit = rc.intersectObjects(meshes, false)[0];
+    if (!hit) return;
+    const h = hit.point.y - floorY;
+    if (h < 0.05) return;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, h, 14), standMat);
+    post.position.set(f * s.x, floorY + h / 2, 0);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 16), mat(BLACK));
+    cap.position.set(f * s.x, hit.point.y - 0.015, 0);
+    scene.add(post); scene.add(cap); stands.push(post, cap);
+  });
+  key.position.set(span * 0.4, span * 0.7, span * 0.5);
+  spot.position.set(0, span * 1.1 + 5, span * 0.4);
+  const sc = key.shadow.camera;
+  sc.left = -span; sc.right = span; sc.top = span; sc.bottom = -span; sc.near = 0.1; sc.far = span * 4;
+  sc.updateProjectionMatrix();
+
+  st = { ammo: gun.cap, locked: false };
+  nextAt = 0;
+  frameCamera(currentView);
+  info.innerHTML = `<h2>${gun.name}</h2>
+    ${gun.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+    <div style="margin-top:6px">${gun.use}</div>
+    <div class="stats">${gun.stats}</div>`;
+  document.querySelectorAll('.gun-btn').forEach(b => b.classList.toggle('active', b.dataset.key === k));
+  hud('READY');
+}
+
+// =====================================================================
+// Casings and rounds
+// =====================================================================
+function makeCasing(style) {
+  const grp = new THREE.Group();
+  if (style === 'shell') {
+    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.42, 12), mat(RED)));
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.12, 12), mat(BRASS)); c.position.y = -0.15; grp.add(c);
+  } else {
+    const len = style === 'rifle' ? 0.32 : 0.12, r = style === 'rifle' ? 0.035 : 0.03;
+    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, len, 10), mat(BRASS)));
+  }
+  return grp;
+}
+function spawnCasing(gun, lp, dir, scale = 1) {
+  if (!current) return;
+  const m = makeCasing(gun.case);
+  m.position.copy(current.localToWorld(new THREE.Vector3(lp[0], lp[1], 0)));
+  m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+  scene.add(m);
+  if (casings.length > 14) { const old = casings.shift(); scene.remove(old.m); }
+  const v = new THREE.Vector3(dir[0] * (0.7 + Math.random() * 0.6), dir[1] * (0.8 + Math.random() * 0.5), (dir[2] || 0) * (0.7 + Math.random() * 0.6)).multiplyScalar(scale);
+  v.applyQuaternion(current.quaternion);
+  casings.push({ m, v, life: 2.5, landed: false, style: gun.case });
+}
+function ejectCasing(gun) {
+  if (!gun.casing && gun.case === undefined) return;
+  spawnCasing(gun, gun.eject, gun.ejDir || [0.7, 1.6, 0.4]);
+}
+function spillCasings(gun, n, lp) {
+  const tok = token;
+  for (let i = 0; i < n; i++) setTimeout(() => { if (tok === token) spawnCasing(gun, lp, [0.3, -0.2, 0.5], 0.8); }, i * 45);
+}
+// A round that slides into the gun during reload (local coordinates).
+function spawnRound(style, from, to, ms) {
+  if (!current) return;
+  const m = makeCasing(style);
+  m.position.set(from[0], from[1], 0);
+  current.add(m);
+  tween(ms, p => { const e = ease(p); m.position.set(lerp(from[0], to[0], e), lerp(from[1], to[1], e), 0); }, () => current && current.remove(m));
+}
+
+// =====================================================================
+// Firing
+// =====================================================================
+const RC = {
+  pistol: [0.06, 0.10, 150], heavy: [0.10, 0.16, 240], smg: [0.04, 0.05, 70], rifle: [0.07, 0.05, 110],
+  lmg: [0.06, 0.04, 80], shotgun: [0.14, 0.12, 260], sniper: [0.20, 0.10, 380], taser: [0.01, 0.02, 100],
+};
+function recoil(gun, iv) {
+  const [kick, flip, du] = RC[gun.rc], g = current, b = g.userData.base;
+  const d = Math.min(du, Math.max(60, iv * 1.6));
+  tween(d, p => {
+    const e = sin01(Math.pow(p, 0.5));
+    g.position.set(b.x - kick * e, b.y + 0.02 * e, b.z);
+    g.rotation.z = flip * e;
+  }, () => { g.position.copy(b); g.rotation.z = 0; });
+}
+function muzzleFx(gun) {
+  flashT = gun.kind === 'taser' ? 0.12 : 0.06;
+  const s = (gun.rc === 'sniper' || gun.rc === 'shotgun' ? 1.1 : gun.rc === 'smg' || gun.rc === 'pistol' ? 0.5 : 0.8) * (0.8 + Math.random() * 0.4);
+  flash.scale.set(s, s, 1);
+  flashMat.rotation = Math.random() * 6;
+  mlight.intensity = 2.5;
+}
+function trigAnim(t, iv = 120) {
+  if (t) tween(Math.min(110, iv), p => { t.rotation.z = -0.28 * sin01(p); }, () => { t.rotation.z = 0; });
+}
+
+function pull() {
+  if (!current || busy) return;
+  const now = performance.now();
+  if (now < nextAt) return;
+  initAudio();
+  const gun = GUNS[curKey], g = current, r = g.roles || {};
+
+  if (st.ammo <= 0) {
+    nextAt = now + 230;
+    SFX.dry(); trigAnim(r.trigger);
+    hud('EMPTY: press R to reload');
+    return;
+  }
+  const iv = gun.cycle || (60000 / gun.rpm);
+  nextAt = now + iv;
+  st.ammo--;
+  const last = st.ammo === 0;
+  trigAnim(r.trigger, iv);
+  if (gun.kind === 'taser') {
+    SFX.zap(); muzzleFx(gun);
+    const pr = r.probes, x0 = pr.userData.p0.x;
+    tween(650, p => { pr.position.x = x0 + 5 * ease(p); }, () => { pr.visible = false; });
+    recoil(gun, iv);
+    hud('EMPTY: press R to reload');
+    return;
+  }
+  SFX.shot(gun.snd); muzzleFx(gun); recoil(gun, iv);
+
+  if (gun.kind === 'semi' || gun.kind === 'auto') {
+    if (r.slide) {
+      const sl = r.slide, x0 = sl.userData.p0.x, tr = gun.travel;
+      const lock = last && gun.lock;
+      if (lock) { tween(55, p => { sl.position.x = x0 - tr * ease(p); }); st.locked = true; }
+      else { const d = Math.min(130, iv * 0.9); tween(d, p => { sl.position.x = x0 - tr * (p < 0.35 ? ease(p / 0.35) : 1 - smooth((p - 0.35) / 0.65)); }, () => { sl.position.x = x0; }); }
+    }
+    if (r.hammer) { const h = r.hammer; tween(100, p => { h.rotation.z = 0.45 * (1 - p); }, () => { h.rotation.z = 0; }); }
+    ejectCasing(gun);
+  } else if (gun.kind === 'revolver') {
+    const h = r.hammer, cy = r.cylinder, a0 = cy.rotation.x;
+    tween(150, p => { h.rotation.z = 0.5 * (1 - p); }, () => { h.rotation.z = 0; });
+    tween(100, p => { cy.rotation.x = a0 + (Math.PI / 3) * smooth(p); });
+  } else if (gun.kind === 'double') {
+    const n = gun.cap - st.ammo - 1;
+    const h = r['h' + (n + 1)];
+    if (n === 1) trigAnim(r.trigger2, iv);
+    if (h) tween(90, p => { h.rotation.z = 0.4 * (1 - p); });
+  } else if (gun.kind === 'pump') {
+    const pm = r.pump, bl = r.bolt, x0 = pm.userData.p0.x, tr = 0.9;
+    const tok = token;
+    setTimeout(() => {
+      if (tok !== token) return;
+      SFX.pumpBack();
+      tween(170, p => { pm.position.x = x0 - tr * smooth(p); bl.position.x = bl.userData.p0.x - 0.5 * smooth(p); });
+    }, 130);
+    setTimeout(() => { if (tok === token) ejectCasing(gun); }, 260);
+    setTimeout(() => {
+      if (tok !== token) return;
+      SFX.pumpFwd();
+      tween(190, p => { pm.position.x = x0 - tr * (1 - smooth(p)); bl.position.x = bl.userData.p0.x - 0.5 * (1 - smooth(p)); }, () => { pm.position.x = x0; bl.position.x = bl.userData.p0.x; });
+    }, 430);
+  } else if (gun.kind === 'bolt') {
+    const b = r.bolt, bx = b.userData.p0.x, tok = token;
+    const at = (ms, fn) => setTimeout(() => { if (tok === token) fn(); }, ms);
+    at(380, () => { SFX.boltUp(); rtTo(b, 'x', -1.2, 150); });
+    at(560, () => { SFX.boltBack(); mvTo(b, 'x', bx - 0.7, 200); ejectCasing(gun); });
+    at(800, () => { SFX.boltFwd(); mvTo(b, 'x', bx, 190, ease); });
+    at(1000, () => { SFX.boltDown(); rtTo(b, 'x', 0, 150); });
+  }
+  hud(last ? 'EMPTY: press R to reload' : '');
+}
+
+// =====================================================================
+// Reloading
+// =====================================================================
+function finishReload() {
+  const g = current, gun = GUNS[curKey];
+  resetRoles(g);
+  g.rotation.set(0, 0, 0); g.position.copy(g.userData.base);
+  st.ammo = gun.cap + (gun.kind === 'semi' && st.ammo > 0 ? 1 : 0);
+  if (gun.kind === 'semi' && st.ammo === 0) st.ammo = gun.cap;
+  st.locked = false;
+  busy = false;
+  nextAt = performance.now() + 80;
+  hud('READY');
+}
+
+function reloadMag(gun, g, r) {
+  const empty = st.ammo === 0;
+  const base = r.mag.userData.p0;
+  const dir = new THREE.Vector3(...(gun.magDir || [0, -1, 0])).normalize();
+  const dist = gun.magDist || 1.4;
+  const pistol = gun.rc === 'pistol' || gun.rc === 'heavy';
+  const place = e => r.mag.position.set(base.x + dir.x * dist * e, base.y + dir.y * dist * e, base.z);
+  const steps = [];
+  let end = 1500;
+  steps.push([0, () => rtTo(g, 'z', pistol ? -0.12 : -0.05, 260)]);
+  steps.push([200, () => {
+    SFX.release();
+    if (r.catch) { const c = r.catch; mvTo(c, 'x', c.userData.p0.x - 0.05, 90); }
+    if (r.cover) rtTo(r.cover, 'z', 0.9, 220);
+  }]);
+  steps.push([320, () => { SFX.magOut(); tween(380, p => { place(p * p); r.mag.rotation.z = 0.5 * p; }, () => { r.mag.visible = false; }); }]);
+  steps.push([850, () => { r.mag.rotation.z = 0; r.mag.visible = true; SFX.magRub(); tween(300, p => place(1 - ease(p))); }]);
+  steps.push([1140, () => SFX.magIn()]);
+  steps.push([1220, () => { if (r.catch) mvTo(r.catch, 'x', r.catch.userData.p0.x, 80); if (r.cover) rtTo(r.cover, 'z', 0, 200); }]);
+  if (empty) {
+    const sl = r.slide, ch = r.charge, bolt = r.bolt;
+    if (sl && st.locked) {
+      steps.push([1400, () => { SFX.rackFwd(); mvTo(sl, 'x', sl.userData.p0.x, 70, ease); }]);
+      end = 1700;
+    } else if (sl || ch) {
+      const o = sl || ch, tr = gun.travel || 0.4;
+      steps.push([1400, () => { SFX.rackBack(); mvTo(o, 'x', o.userData.p0.x - tr, 160); }]);
+      steps.push([1600, () => { SFX.rackFwd(); mvTo(o, 'x', o.userData.p0.x, 70, ease); }]);
+      end = 1900;
+    } else if (bolt) {
+      const bx = bolt.userData.p0.x;
+      steps.push([1400, () => { SFX.boltUp(); rtTo(bolt, 'x', -1.2, 150); }]);
+      steps.push([1580, () => { SFX.boltBack(); mvTo(bolt, 'x', bx - 0.7, 200); }]);
+      steps.push([1820, () => { SFX.boltFwd(); mvTo(bolt, 'x', bx, 190, ease); }]);
+      steps.push([2020, () => { SFX.boltDown(); rtTo(bolt, 'x', 0, 150); }]);
+      end = 2300;
+    }
+  }
+  steps.push([1300, () => rtTo(g, 'z', 0, 240)]);
+  T(steps, end, finishReload);
+}
+
+function reloadRevolver(gun, g, r) {
+  const cr = r.crane, cy = r.cylinder, spent = gun.cap - st.ammo;
+  const steps = [];
+  steps.push([0, () => { SFX.cylOpen(); rtTo(cr, 'x', 1.2, 330); }]);
+  steps.push([480, () => { spillCasings(gun, spent, gun.spill); for (let i = 0; i < Math.min(spent, 3); i++) setTimeout(() => SFX.tinkle('pistol'), 250 + i * 110); }]);
+  for (let i = 0; i < gun.cap; i++) {
+    steps.push([850 + i * 170, () => { SFX.shellIn('pistol'); rtTo(cy, 'x', cy.rotation.x + Math.PI / 3, 120); }]);
+  }
+  const tc = 850 + gun.cap * 170 + 150;
+  steps.push([tc, () => rtTo(cr, 'x', 0, 300)]);
+  steps.push([tc + 250, () => SFX.cylClose()]);
+  T(steps, tc + 650, finishReload);
+}
+
+function reloadDouble(gun, g, r) {
+  const spent = gun.cap - st.ammo, br = r.barrels;
+  const steps = [];
+  steps.push([0, () => { SFX.breakOpen(); rtTo(br, 'z', -0.5, 300); }]);
+  steps.push([380, () => { spillCasings(gun, spent, gun.spill); for (let i = 0; i < spent; i++) setTimeout(() => SFX.tinkle('shell'), 300 + i * 120); }]);
+  steps.push([760, () => { SFX.shellIn('shell'); spawnRound('shell', [0.7, -0.8], [0.7, 0.45], 240); }]);
+  steps.push([1040, () => { SFX.shellIn('shell'); spawnRound('shell', [0.7, -0.8], [0.7, 0.45], 240); }]);
+  steps.push([1350, () => rtTo(br, 'z', 0, 230)]);
+  steps.push([1500, () => SFX.breakClose()]);
+  steps.push([1700, () => { SFX.cock(); rtTo(r.h1, 'z', 0.4, 90); }]);
+  steps.push([1800, () => { SFX.cock(); rtTo(r.h2, 'z', 0.4, 90); }]);
+  T(steps, 2000, finishReload);
+}
+
+function reloadPump(gun, g, r) {
+  const n = gun.cap - st.ammo, steps = [];
+  steps.push([0, () => rtTo(g, 'z', 0.08, 220)]);
+  for (let i = 0; i < n; i++) {
+    steps.push([250 + i * 340, () => { SFX.shellIn('shell'); spawnRound('shell', [0.5, -1.0], [0.5, 0.2], 260); }]);
+  }
+  let t = 250 + n * 340 + 120;
+  steps.push([t, () => rtTo(g, 'z', 0, 220)]);
+  if (st.ammo === 0) {
+    const pm = r.pump, x0 = pm.userData.p0.x;
+    steps.push([t + 150, () => { SFX.pumpBack(); mvTo(pm, 'x', x0 - 0.9, 170); }]);
+    steps.push([t + 400, () => { SFX.pumpFwd(); mvTo(pm, 'x', x0, 190, ease); }]);
+    t += 650;
+  }
+  T(steps, t + 250, finishReload);
+}
+
+function reloadBolt(gun, g, r) {
+  const n = gun.cap - st.ammo, b = r.bolt, bx = b.userData.p0.x, steps = [];
+  steps.push([0, () => { SFX.boltUp(); rtTo(b, 'x', -1.2, 160); }]);
+  steps.push([200, () => { SFX.boltBack(); mvTo(b, 'x', bx - 0.7, 230); }]);
+  for (let i = 0; i < n; i++) {
+    steps.push([520 + i * 300, () => { SFX.shellIn('rifle'); spawnRound('rifle', [-0.3, 1.2], [-0.3, 0.5], 220); }]);
+  }
+  const t = 520 + n * 300 + 100;
+  steps.push([t, () => { SFX.boltFwd(); mvTo(b, 'x', bx, 200, ease); }]);
+  steps.push([t + 220, () => { SFX.boltDown(); rtTo(b, 'x', 0, 160); }]);
+  T(steps, t + 450, finishReload);
+}
+
+function reloadTaser(gun, g, r) {
+  const m = r.mag, pr = r.probes, mx = m.userData.p0.x, px = pr.userData.p0.x;
+  const steps = [];
+  steps.push([0, () => { SFX.release(); mvTo(m, 'x', mx + 0.7, 260); }]);
+  steps.push([380, () => { SFX.magOut(); m.visible = false; }]);
+  steps.push([700, () => {
+    m.visible = true; m.position.x = mx + 0.7;
+    pr.position.x = px + 0.7; pr.visible = true;
+    mvTo(m, 'x', mx, 300); mvTo(pr, 'x', px, 300);
+  }]);
+  steps.push([990, () => SFX.magIn()]);
+  T(steps, 1250, finishReload);
+}
+
+function reload() {
+  if (!current || busy) return;
+  initAudio();
+  const gun = GUNS[curKey], g = current, r = g.roles || {};
+  if (st.ammo >= gun.cap) { hud('Already full'); setTimeout(() => { if (!busy) hud(''); }, 900); return; }
+  busy = true; held = false;
+  hud('RELOADING...');
+  ({ mag: reloadMag, revolver: reloadRevolver, double: reloadDouble, pump: reloadPump, bolt: reloadBolt, taser: reloadTaser })[gun.reload](gun, g, r);
+}
+
+// =====================================================================
+// UI
+// =====================================================================
+Object.entries(GUNS).forEach(([k, gun]) => {
+  const b = document.createElement('button');
+  b.className = 'gun-btn';
+  b.dataset.key = k;
+  b.innerHTML = `${gun.name}<small>${gun.tags[0]}</small>`;
+  b.onclick = () => { initAudio(); show(k); };
+  list.appendChild(b);
+});
+
+const fireBtn = document.getElementById('btn-fire');
+fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); held = true; pull(); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => fireBtn.addEventListener(ev, () => { held = false; }));
+document.getElementById('btn-reload').addEventListener('pointerdown', e => { e.preventDefault(); reload(); });
+
+const soundBtn = document.getElementById('btn-sound');
+soundBtn.onclick = () => {
+  initAudio();
+  muted = !muted;
+  if (out) out.gain.value = muted ? 0 : 0.9;
+  soundBtn.textContent = 'Sound: ' + (muted ? 'off' : 'on');
+  soundBtn.classList.toggle('on', !muted);
+};
+document.addEventListener('pointerdown', initAudio);
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) { held = true; pull(); } }
+  if (e.key === 'r' || e.key === 'R') reload();
+});
+window.addEventListener('keyup', e => { if (e.code === 'Space') held = false; });
+
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
+resize();
+show('glock');
+
+// =====================================================================
+// Loop
+// =====================================================================
+let last = performance.now();
+(function loop() {
+  requestAnimationFrame(loop);
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+
+  anims = anims.filter(a => {
+    const p = Math.max(0, Math.min(1, (now - a.t0) / a.dur));
+    a.fn(p);
+    if (p >= 1) { if (a.done) a.done(); return false; }
+    return true;
+  });
+  casings = casings.filter(c => {
+    c.v.y -= 9 * dt;
+    c.m.position.addScaledVector(c.v, dt);
+    c.m.rotation.x += 10 * dt; c.m.rotation.z += 6 * dt;
+    if (c.m.position.y < floorY + 0.04 && c.v.y < 0) {
+      c.m.position.y = floorY + 0.04;
+      c.v.y *= -0.35; c.v.x *= 0.6; c.v.z *= 0.6;
+      if (!c.landed) { c.landed = true; if (AC) SFX.tinkle(c.style); }
+    }
+    c.life -= dt;
+    if (c.life <= 0) { scene.remove(c.m); return false; }
+    return true;
+  });
+  if (flashT > 0) {
+    flashT -= dt;
+    flashMat.opacity = Math.max(0, Math.min(1, flashT * 16));
+    mlight.intensity = Math.max(0, flashT * 40);
+  } else { flashMat.opacity = 0; mlight.intensity = 0; }
+  if (held && current && !busy && GUNS[curKey].kind === 'auto') pull();
+
+  controls.update();
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
