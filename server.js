@@ -13,6 +13,7 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const players = new Map();
+const users = new Map();
 
 // ===== MIDDLEWARE =====
 app.use(cors({ origin: "*" }));
@@ -21,81 +22,45 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(__dirname));
 
-// ===== ADS.TXT FOR ADSENSE =====
-app.get("/ads.txt", (_req, res) => {
-  res.type("text/plain");
-  res.send("google.com, pub-5432698430900280, DIRECT, f08c47fec0942fa0");
+// ===== LOGIN SYSTEM =====
+app.post('/signup', (req,res)=>{
+  const {username,password}=req.body;
+  if(!username||!password) return res.json({error:'need username password'});
+  if(users.has(username)) return res.json({error:'user already exists'});
+  users.set(username,{username,password});
+  console.log('SIGNUP:',username);
+  return res.json({success:true,message:'account created! now login'});
 });
 
-// ===== HEALTH CHECK =====
-app.get("/health", (_req, res) => res.json({ ok: true, game: "VIBING RP KCM" }));
-
-// ===== SIGNUP / LOGIN SYSTEM =====
-let users = [];
-const usersFile = path.join(__dirname, "users.json");
-
-if (fs.existsSync(usersFile)) {
-  try {
-    users = JSON.parse(fs.readFileSync(usersFile, "utf8"));
-  } catch (e) {
-    users = [];
-  }
-}
-
-function saveUsers() {
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-}
-
-app.post("/signup", (req, res) => {
-  const { username, email, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password required" });
-  }
-  if (users.find(u => u.username === username)) {
-    return res.status(400).json({ error: "Username already taken" });
-  }
-  const newUser = {
-    id: Date.now(),
-    username,
-    email: email || "",
-    password,
-    createdAt: new Date().toISOString()
-  };
-  users.push(newUser);
-  saveUsers();
-  res.json({ success: true, message: "Signup successful!", user: { username, id: newUser.id } });
+app.post('/login', (req,res)=>{
+  const {username,password}=req.body;
+  const u=users.get(username);
+  if(!u||u.password!==password) return res.json({error:'wrong username or password'});
+  console.log('LOGIN:',username);
+  return res.json({success:true,message:'welcome '+username});
 });
 
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (!user) {
-    return res.status(400).json({ error: "Invalid username or password" });
-  }
-  res.json({ success: true, message: "Login successful!", user: { username: user.username, id: user.id } });
+app.get('/users', (req,res)=>{
+  res.json([...users.keys()]);
 });
 
-app.get("/api/users", (_req, res) => {
-  res.json(users.map(u => ({ username: u.username, id: u.id })));
-});
-
-// ===== SOCKET.IO MULTIPLAYER (YOUR ORIGINAL CODE) =====
+// ===== SOCKET IO =====
 io.on("connection", (socket) => {
-  socket.emit("players:current", Array.from(players.values()));
+  console.log("player connected:", socket.id);
 
-  socket.on("player:join", (data = {}) => {
+  socket.on("player:joined", (data = {}) => {
     const player = {
       id: socket.id,
-      name: String(data.name || "Player").slice(0, 24),
-      x: Number.isFinite(data.x) ? data.x : 0,
-      y: Number.isFinite(data.y) ? data.y : 0,
-      z: Number.isFinite(data.z) ? data.z : 0,
-      heading: Number.isFinite(data.heading) ? data.heading : 0,
+      name: String(data.name || "Player").slice(0,20),
+      x: Number(data.x) || 0,
+      y: Number(data.y) || 0,
+      z: Number(data.z) || 0,
+      heading: 0,
       updatedAt: Date.now()
     };
     players.set(socket.id, player);
+    socket.emit("players:list", [...players.values()]);
     socket.broadcast.emit("player:joined", player);
-    socket.emit("player:ready", { id: socket.id });
   });
 
   socket.on("player:update", (data = {}) => {
@@ -115,7 +80,7 @@ io.on("connection", (socket) => {
 
   socket.on("chat:message", (data = {}) => {
     const player = players.get(socket.id);
-    const message = String(data.message || "").trim().slice(0, 200);
+    const message = String(data.message || "").slice(0,200);
     if (!message || !player) return;
     io.emit("chat:message", {
       id: socket.id,
@@ -128,10 +93,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     players.delete(socket.id);
     socket.broadcast.emit("player:left", { id: socket.id });
+    console.log("player left:", socket.id);
   });
 });
 
 // ===== START SERVER =====
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`VIBING RP KCM server listening on port ${PORT}`);
+  console.log('VIBING RP KCM server listening on '+PORT);
 });
