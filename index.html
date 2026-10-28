@@ -4065,5 +4065,39 @@ body:not(.rp-armed) #rp-fire,body:not(.rp-armed) #rp-aim,body:not(.rp-armed) #rp
  document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const k of ['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '])try{keys[k]=false}catch(e){}}});
 })();
 </script>
-<div id="a" style="position:fixed;inset:0;z-index:999999;background:#000e;display:flex;align-items:center;justify-content:center"><div style="background:#1b2233;padding:20px;border-radius:12px;width:90%;max-width:300px"><h3 style="color:#fff;text-align:center">Vibe RP Login</h3><input id="u" placeholder="Username" style="width:100%;padding:10px;margin:5px 0"><input id="p" type="password" placeholder="Password" style="width:100%;padding:10px;margin:5px 0"><button onclick="s(1)" style="width:100%;padding:10px;background:#3a6aff;color:#fff;border:0;margin-top:5px">SIGN UP</button><button onclick="s(0)" style="width:100%;padding:10px;background:#333;color:#fff;border:0;margin-top:5px">LOGIN</button><p id="m" style="color:#fc0;text-align:center"></p></div></div><script>async function s(x){const u=document.getElementById('u').value,p=document.getElementById('p').value;if(!u||!p){m.innerText='enter username pass';return}const e=x?'/signup':'/login';const r=await fetch(e,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});const d=await r.json();m.innerText=d.message||d.error;if(d.success){localStorage.setItem('vibe_user',u);document.getElementById('a').style.display='none'}}if(localStorage.getItem('vibe_user'))a.style.display='none'</script>
+<div id="a" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:sans-serif">
+<div style="background:#1e293b;padding:24px;border-radius:16px;width:90%;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,.5)">
+<h2 style="color:white;text-align:center;margin:0 0 16px">Vibe RP Login</h2>
+<input id="u" placeholder="Username" style="width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#334155;color:white;box-sizing:border-box">
+<input id="p" type="password" placeholder="Password" style="width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#334155;color:white;box-sizing:border-box">
+<button onclick="signup()" style="width:100%;padding:12px;margin-top:10px;border-radius:8px;border:0;background:#3b82f6;color:white;font-weight:bold;cursor:pointer">SIGN UP</button>
+<button onclick="login()" style="width:100%;padding:12px;margin-top:8px;border-radius:8px;border:0;background:#475569;color:white;font-weight:bold;cursor:pointer">LOGIN</button>
+<p id="m" style="color:#fbbf24;text-align:center;font-size:13px;margin-top:10px;min-height:18px"></p>
+</div></div>
+<script>
+function getUsers(){try{return JSON.parse(localStorage.getItem('vrp_users')||'{}')}catch{return{}}}
+function saveUsers(u){localStorage.setItem('vrp_users',JSON.stringify(u))}
+function signup(){
+ const username=document.getElementById('u').value.trim();
+ const password=document.getElementById('p').value.trim();
+ const m=document.getElementById('m');
+ if(!username||!password){m.textContent='Enter username & password';return;}
+ const users=getUsers();
+ if(users[username]){m.textContent='User exists, now login';return;}
+ users[username]=password; saveUsers(users);
+ m.style.color='#4ade80'; m.textContent='Account created! Now tap LOGIN';
+}
+function login(){
+ const username=document.getElementById('u').value.trim();
+ const password=document.getElementById('p').value.trim();
+ const m=document.getElementById('m');
+ if(!username||!password){m.textContent='Enter username & password';return;}
+ const users=getUsers();
+ if(users[username]!==password){m.style.color='#fb7185'; m.textContent='Wrong password';return;}
+ localStorage.setItem('vrp_current',username);
+ document.getElementById('a').style.display='none';
+ console.log('LOGGED IN',username);
+}
+(function(){const c=localStorage.getItem('vrp_current'); if(c){document.getElementById('a').style.display='none';}})();
+</script>
 </body></html>
