@@ -4076,34 +4076,43 @@ body:not(.rp-armed) #rp-fire,body:not(.rp-armed) #rp-aim,body:not(.rp-armed) #rp
 <button onclick="signup()" style="width:100%;padding:10px">Sign Up</button>
 <button onclick="login()" style="width:100%;padding:10px">Login</button>
 <p id="m" style="color:#ffbf24;text-align:center"></p>
+<div id="codeBox" style="display:none;margin-top:12px;">
+<input id="codeInput" placeholder="Enter 6-digit code from email" style="width:100%;padding:12px;border-radius:8px;border:1px solid #333;background:#111;color:white;"/>
+<button onclick="confirmCode()" style="width:100%;margin-top:8px;padding:12px;background:#4ade80;color:black;font-weight:bold;border-radius:8px;border:none;">Confirm Code</button>
+</div>
 </div></div>
 <script>
+let pendingEmail="";
 async function signup(){
-  const e=document.getElementById('e').value.trim();
-  const u=document.getElementById('u').value.trim();
-  const p=document.getElementById('p').value;
-  const m=document.getElementById('m');
-  if(!e||!u||!p){m.textContent='Enter email, username & password';return}
-  m.textContent='Creating account...';
-  const {data,error}=await sb.auth.signUp({email:e,password:p,options:{data:{username:u}}});
-  if(error){m.style.color='#ffbf40';m.textContent=error.message;return}
-  m.style.color='#4ade80';m.textContent='Account created! You can login now.';
+ const e=document.getElementById('e').value.trim();
+ const u=document.getElementById('u').value.trim();
+ const p=document.getElementById('p').value;
+ const m=document.getElementById('m');
+ if(!e||!u||!p){m.textContent='Enter email, username & password';m.style.color='#ffbf24';return;}
+ m.textContent='Creating account... Sending CODE to email...';
+ pendingEmail=e;
+ const {data,error}=await sb.auth.signUp({email:e,password:p,options:{data:{username:u}}});
+ if(error){m.style.color='#ffbf40';m.textContent=error.message;}
+ else{m.style.color='#4ade80';m.textContent='CODE SENT to '+e+'! Check your email! Enter code below!';document.getElementById('codeBox').style.display='block';}
+}
+async function confirmCode(){
+ const c=document.getElementById('codeInput').value.trim();
+ const m=document.getElementById('m');
+ if(!c){m.textContent='Enter 6-digit code';m.style.color='#ffbf24';return;}
+ m.textContent='Verifying code...';
+ const {data,error}=await sb.auth.verifyOtp({email:pendingEmail,token:c,type:'signup'});
+ if(error){m.style.color='#ffbf40';m.textContent='Wrong code: '+error.message;}
+ else{m.style.color='#4ade80';m.textContent='Verified! Welcome!';localStorage.setItem('vrp_current',data.user.id);localStorage.setItem('vrp_username',data.user.user_metadata.username||pendingEmail);document.getElementById('a').style.display='block';document.getElementById('codeBox').style.display='none';}
 }
 async function login(){
-  const e=document.getElementById('e').value.trim();
-  const p=document.getElementById('p').value;
-  const m=document.getElementById('m');
-  if(!e||!p){m.textContent='Enter email & password';return}
-  const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});
-  if(error){m.style.color='#ffbf40';m.textContent=error.message;return}
-  localStorage.setItem('vrp_current',data.user.id);
-  localStorage.setItem('vrp_username',data.user.user_metadata?.username||e);
-  document.getElementById('a').style.display='none';
-  m.style.color='#4ade80';m.textContent='Logged in!';
-  console.log('LOGGED IN',data.user);
+ const e=document.getElementById('e').value.trim();
+ const p=document.getElementById('p').value;
+ const m=document.getElementById('m');
+ if(!e||!p){m.textContent='Enter email & password';m.style.color='#ffbf24';return;}
+ const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+ if(error){m.style.color='#ffbf40';m.textContent=error.message;}
+ else{localStorage.setItem('vrp_current',data.user.id);localStorage.setItem('vrp_username',data.user.user_metadata.username||data.user.email);document.getElementById('a').style.display='block';m.style.color='#4ade80';m.textContent='Logged in! Welcome!';console.log('LOGGED IN',data.user);}
 }
-(function(){const c=localStorage.getItem('vrp_current');if(c){document.getElementById('a').style.display='none';}})();
-</script>
-(function(){const c=localStorage.getItem('vrp_current'); if(c){document.getElementById('a').style.display='none';}})();
+(function(){const c=localStorage.getItem('vrp_current');if(c){const a=document.getElementById('a');if(a)a.style.display='block';}})();
 </script>
 </body></html>
