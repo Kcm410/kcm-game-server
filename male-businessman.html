@@ -273,7 +273,17 @@ function mark(){
  body.querySelectorAll('.seg[data-k] button').forEach(b=>b.classList.toggle('on',S[b.parentElement.dataset.k]===b.dataset.v));
  body.querySelectorAll('.row').forEach(r=>r._sync&&r._sync())}
 mark();
-
+// --- VIBE RP: SAVE CHARACTER ---
+const saveBtn=document.createElement('button');
+saveBtn.textContent='USE THIS SKIN IN GAME';
+saveBtn.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;padding:16px 24px;background:#00ff88;color:#000;font-weight:bold;border-radius:12px;border:none;font-size:16px;';
+saveBtn.onclick=()=>{
+  localStorage.setItem('vibe_character',JSON.stringify(S));
+  localStorage.setItem('vibe_skin_name',S.char||'male');
+  alert('✅ Character saved! Loading game...');
+  location.href='index.html';
+};
+document.body.appendChild(saveBtn);
 $('#rst').onclick=()=>{const ch=S.char;S={...DEF,char:ch};apply();mark()};
 const R=a=>a[Math.random()*a.length|0],rr=(a,b)=>a+Math.random()*(b-a);
 $('#rnd').onclick=()=>{S.skin=R(PAL.skin.slice(0,7));S.hair=R(PAL.hair);S.brow=S.hair;S.eye=R(PAL.eye);S.top=R(PAL.top);S.trouser=R(PAL.trouser);S.shoes=R(PAL.shoes);S.bald=Math.random()<.12;
