@@ -1,0 +1,17 @@
+{
+  "name": "VIBING RP - VIBE RP",
+  "short_name": "VIBING RP",
+  "description": "VIBING RP - VIBE RP Roleplay",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/732/732212.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
