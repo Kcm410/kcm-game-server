@@ -480,7 +480,33 @@ function person(n){
   scene.add(g);
   return {g,armL,armR,legL,legR,topM:top,pantsM:pants};
 }
-
+// ===== VIBE RP - USE SAVED SKIN FOR PLAYER =====
+const _origPerson = person;
+person = function(n){
+  try{
+    if(typeof VIBE_SKIN !== 'undefined' && VIBE_SKIN && typeof VIBE_SKIN === 'object'){
+      // If it's player, use saved skin (male/female/any)
+      if(n.isPlayer || n.type==='player' || n.type==='ped' && window._isPlayerNext){
+        n = Object.assign({}, n, VIBE_SKIN);
+      }
+    }
+  }catch(e){}
+  return _origPerson(n);
+};
+// Also patch makeNPC for player
+const _origMakeNPC = makeNPC;
+makeNPC = function(o){
+  if(o && o.isPlayer){
+    window._isPlayerNext = true;
+    if(typeof VIBE_SKIN !== 'undefined' && VIBE_SKIN && typeof VIBE_SKIN === 'object'){
+      o = Object.assign({}, o, VIBE_SKIN);
+    }
+  }
+  const r = _origMakeNPC(o);
+  window._isPlayerNext = false;
+  return r;
+};
+// ===== END VIBE SKIN =====
 function makeNPC(o){
   const n=Object.assign({type:'ped',name:'Person',x:0,z:0,dir:1,hp:3,max:3,top:0x6a7a8a,pants:0x35384a,hair:0x2a1c10,
     money:20+Math.floor(Math.random()*120),age:20+Math.floor(Math.random()*40),nation:null,job:null,
