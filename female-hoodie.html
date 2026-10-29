@@ -282,7 +282,17 @@ $('#rnd').onclick=()=>{S.skin=R(PAL.skin.slice(0,7));S.hair=R(PAL.hair);S.brow=S
  S.hat=R(PAL.hat);S.frame=R(PAL.frame);S.metal=R(PAL.metal);S.extra=R(PAL.extra);apply();mark()};
 $('#spin').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.target.textContent='Auto-rotate: '+(ctl.autoRotate?'on':'off')};
 $('#shot').onclick=()=>{renderer.render(scene,cam);const a=document.createElement('a');a.download='female-hoodie.png';a.href=cv.toDataURL('image/png');a.click()};
-
+// --- VIBE RP: SAVE CHARACTER ---
+const saveBtn=document.createElement('button');
+saveBtn.textContent='USE THIS SKIN IN GAME';
+saveBtn.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;padding:16px 24px;background:#00ff88;color:#000;font-weight:bold;border-radius:12px;border:none;font-size:16px;';
+saveBtn.onclick=()=>{
+  localStorage.setItem('vibe_character',JSON.stringify(S));
+  localStorage.setItem('vibe_skin_name',S.char||'male');
+  alert('✅ Character saved! Loading game...');
+  location.href='index.html';
+};
+document.body.appendChild(saveBtn);
 function resize(){const r=$('#stage').getBoundingClientRect();renderer.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 (function loop(){requestAnimationFrame(loop);const dt=clock.getDelta();if(mixer)mixer.update(dt);ctl.update();renderer.render(scene,cam)})();
