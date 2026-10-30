@@ -1,17 +1,23 @@
 {
-  "name": "VIBING RP - VIBE RP",
+  "name": "VIBING RP",
   "short_name": "VIBING RP",
-  "description": "VIBING RP - VIBE RP Roleplay",
-  "start_url": "/",
+  "description": "Real People - Real Stories - Your City - GTA RP",
+  "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#000000",
-  "theme_color": "#000000",
+  "theme_color": "#ffcc00",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/732/732212.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "background.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
     }
   ]
 }
