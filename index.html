@@ -2,30 +2,68 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Game HDML - VIBING RP</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Game HDML</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:url('background.jpg') no-repeat center/cover #000;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial}
-.box{background:rgba(0,0,0,0.9);border:2px solid #ffcc00;border-radius:18px;padding:28px;width:90%;max-width:360px;text-align:center}
-h1{color:#fff;font-size:40px}h1 span{color:#ffcc00}
+*{margin:0;padding:0;box-sizing:border-box}
+body{height:100vh;width:100vw;background:#000;overflow:hidden;font-family:'Poppins',sans-serif}
+.screen{position:fixed;inset:0;display:none}
+.screen.show{display:flex}
+#login{background:url('background.jpg') no-repeat center/cover;display:flex;align-items:center;justify-content:center}
+.box{background:rgba(0,0,0,0.85);border:2px solid #ffcc00;border-radius:20px;padding:28px;width:90%;max-width:380px;text-align:center}
+.box h1{font-family:'Bangers';font-size:50px;color:#fff} .box h1 span{color:#ffcc00}
 input{width:100%;padding:14px;margin:8px 0;background:#111;border:1px solid #333;border-radius:10px;color:#fff}
-button{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900;font-size:18px}
+.btn{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900;font-size:18px;cursor:pointer}
+#loading{background:url('background.jpg') no-repeat center/cover;flex-direction:column;justify-content:space-between;align-items:center;padding:6vh 5vw}
+#loading h1{font-family:'Bangers';font-size:15vw;color:#fff;text-shadow:4px 4px 0 #000;line-height:0.8;text-align:center}
+#loading h1 span{color:#ffcc00}
+.bar{width:100%;height:22px;background:rgba(0,0,0,0.8);border:1px solid #555;border-radius:20px;overflow:hidden}
+.fill{width:0%;height:100%;background:linear-gradient(90deg,#ffcc00,#ff9900);box-shadow:0 0 15px #ffcc00}
 </style>
 </head>
 <body>
-<div class="box">
-<h1>GAME <span>HDML</span></h1>
-<p style="color:#aaa">Format: mike_jh</p>
-<input id="rpname" placeholder="mike_jh">
-<input id="rpPass" type="password" placeholder="Password min 4">
-<button onclick="go()">SET USERNAME ▶</button>
+
+<div id="login" class="screen show">
+ <div class="box">
+  <h1>GAME <span>HDML</span></h1>
+  <small style="color:#aaa">Format: mike_jh</small><br><br>
+  <input id="rpname" placeholder="mike_jh">
+  <input id="rpPass" type="password" placeholder="Password min 4">
+  <button class="btn" onclick="goLoad()">SET USERNAME ▶</button>
+ </div>
 </div>
+
+<div id="loading" class="screen">
+  <h1>GAME<br><span>HDML</span></h1>
+  <div style="width:100%">
+    <div style="color:#fff;text-align:center;letter-spacing:5px;margin-bottom:10px">LOADING CITY...</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div id="pct" style="color:#fff;text-align:center;margin-top:8px">0%</div>
+  </div>
+</div>
+
 <script>
-function go(){
- let n=document.getElementById('rpname').value.trim();
- if(!n.includes('_')){alert('Use mike_jh format');return}
- localStorage.setItem('vibing_rp_name',n);
- location.href='game.html';
+let rpName='';
+function goLoad(){
+ let n=document.getElementById('rpname').value.trim().replace('/','_');
+ let pw=document.getElementById('rpPass').value;
+ let a=n.split('_');
+ if(a.length!=2){alert('Use mike_jh format');return}
+ if(pw.length<4){alert('Password min 4');return}
+ rpName=a[0].charAt(0).toUpperCase()+a[0].slice(1).toLowerCase()+'_'+a[1].charAt(0).toUpperCase()+a[1].slice(1).toLowerCase();
+ localStorage.setItem('vibing_rp_name',rpName);
+ document.getElementById('login').classList.remove('show');
+ document.getElementById('loading').classList.add('show');
+ let p=0;
+ let fill=document.getElementById('fill');
+ let pct=document.getElementById('pct');
+ let t=setInterval(()=>{
+  p+=Math.random()*14;
+  if(p>=100){p=100;clearInterval(t);setTimeout(()=>{location.href='game.html';},600)}
+  fill.style.width=p+'%';
+  pct.innerText=Math.floor(p)+'%';
+ },120);
 }
 </script>
 </body>
