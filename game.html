@@ -1,15 +1,17 @@
 <!doctype html><html><head><link rel="manifest" href="manifest.json"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>VIBING RP ❤️</title>
-<script>/* NO GMAIL VIBING RP */ const sb={from:()=>({select:async()=>({data:[]}),insert:async()=>({data:[]}),update:()=>({select:async()=>({data:[]})}),delete:()=>({select:async()=>({data:[]})}),upsert:async()=>({data:[]})}),auth:{signUp:async()=>({data:{user:{id:'local-'+Date.now()}},error:null}),signIn:async()=>({data:{user:{id:'local-'+Date.now()}},error:null}),getUser:async()=>({data:{user:{id:'local-'+Date.now()}}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe:()=>{}}}})},storage:{from:()=>({upload:async()=>({data:{},error:null}),getPublicUrl:()=>({data:{publicUrl:''}}),list:async()=>({data:[]})})}}; window.sb=sb; window.supabase={auth:sb.auth};</script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544" crossorigin="anonymous"></script><script>// ===== VIBE RP CHARACTER LOADER =====
+<script>/* NO GMAIL - VIBING RP ❤️ */ const sb={from:()=>({select:async()=>({data:[]}),insert:async()=>({data:null,error:null}),update:async()=>({data:null,error:null}),delete:async()=>({data:null,error:null}),upsert:async()=>({data:null,error:null})}),auth:{signUp:async()=>({data:{user:{id:'vibe-user'}},error:null}),signInWithPassword:async()=>({data:{user:{id:'vibe-user'}},error:null}),getUser:async()=>({data:{user:null}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe:()=>{}}}})}}; window.sb=sb; window.supabase={auth:sb.auth}; localStorage.setItem('vibe_no_email','true');</script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544" crossorigin="anonymous"></script>
+<script>// ===== VIBE RP CHARACTER LOADER =====
 let VIBE_SKIN=null;
 try{
- const saved=localStorage.getItem('vibe_character');
- const savedName=localStorage.getItem('vibe_skin_name');
- if(saved){ VIBE_SKIN=JSON.parse(saved); console.log('✅ VIBE Character Loaded:',savedName,VIBE_SKIN); }
+  const saved=localStorage.getItem('vibe_character');
+  const savedName=localStorage.getItem('vibe_skin_name');
+  if(saved){ VIBE_SKIN=JSON.parse(saved); }
 }catch(e){}
-function getVibeSkin(){ if(VIBE_SKIN&&VIBE_SKIN.char) return VIBE_SKIN; return null; }
+function getVibeSkin(){ if(VIBE_SKIN) return VIBE_SKIN; return null; }
+function applyVibeSkin(){}
 // ===== END LOADER =====
-</script><title>VIBING RP ❤️</title><style>
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2233;--ui:rgba(30,32,40,.9);--ui2:#23262f;--ink:#ece8df;--line:#3a3e4a;color-scheme:dark}}
+</script><title>VIBING RP ❤️</title><style>input[placeholder="Email"], input[type="email"], #email, input[id*="email" i]{display:none !important;}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#0a0e1a;--card:#111827;}
 :root[data-theme="dark"]{--bg:#1b2233;--ui:rgba(30,32,40,.9);--ui2:#23262f;--ink:#ece8df;--line:#3a3e4a;color-scheme:dark}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);touch-action:none;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none}
 canvas{position:fixed;inset:0;display:block;z-index:0}
