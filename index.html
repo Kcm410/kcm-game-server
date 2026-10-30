@@ -2,50 +2,42 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Game HDML - VIBING RP</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{margin:0;height:100vh;width:100vw;overflow:hidden;background:#000;font-family:Arial}
-.screen{position:fixed;inset:0;display:none}
-.screen.show{display:flex}
-#login{background:url('background.jpg') no-repeat center/cover;display:flex;align-items:center;justify-content:center}
-.box{background:rgba(0,0,0,0.88);border:2px solid #ffcc00;border-radius:18px;padding:28px;width:90%;max-width:380px;text-align:center}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+body{background:#000 url('background.jpg') no-repeat center/cover;font-family:Arial;display:flex;align-items:center;justify-content:center}
+/* FORCE LANDSCAPE - NO ROTATE */
+.box{background:rgba(0,0,0,0.9);border:2px solid #ffcc00;border-radius:18px;padding:28px;width:90%;max-width:380px;text-align:center}
+.box h1{font-size:42px;color:#fff} .box h1 span{color:#ffcc00}
 input{width:100%;padding:14px;margin:8px 0;background:#111;border:1px solid #333;border-radius:10px;color:#fff}
-.btn{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900;font-size:18px}
-#loading{background:url('background.jpg') no-repeat center/cover;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:18vh}
-.bar{width:60%;height:18px;background:rgba(0,0,0,0.6);border:1px solid #fff;border-radius:20px;overflow:hidden;margin-top:10px}
-.fill{width:0%;height:100%;background:#ffcc00;box-shadow:0 0 10px #ffcc00}
+.btn{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900;font-size:18px;cursor:pointer}
+#loading{position:fixed;inset:0;display:none;background:url('background.jpg') no-repeat center/cover;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:18vh}
+#loading.show{display:flex}
+.bar{width:60%;height:18px;background:rgba(0,0,0,0.7);border:1px solid #fff;border-radius:20px;overflow:hidden}
+.fill{width:0%;height:100%;background:#ffcc00}
 </style>
 </head>
 <body>
-<div id="login" class="screen show">
-<div class="box">
-<h1 style="color:#fff;font-size:42px">GAME <span style="color:#ffcc00">HDML</span></h1>
+
+<div id="login" class="box">
+<h1>GAME <span>HDML</span></h1>
 <small style="color:#aaa">Format: mike_jh</small><br><br>
 <input id="rpname" placeholder="mike_jh">
 <input id="rpPass" type="password" placeholder="Password min 4">
 <button class="btn" onclick="goLoad()">SET USERNAME ▶</button>
 </div>
-</div>
-<div id="loading" class="screen">
+
+<div id="loading">
 <div style="color:#fff;letter-spacing:4px">LOADING...</div>
 <div class="bar"><div class="fill" id="fill"></div></div>
 <div id="pct" style="color:#fff;margin-top:6px">0%</div>
 </div>
+
 <script>
-function goLoad(){
- let n=document.getElementById('rpname').value.trim().replace('/','_');
- let pw=document.getElementById('rpPass').value;
- let a=n.split('_');
- if(a.length!=2){alert('Use mike_jh');return}
- if(pw.length<4){alert('Min 4');return}
- localStorage.setItem('vibing_rp_name',n);
- document.getElementById('login').classList.remove('show');
- document.getElementById('loading').classList.add('show');
- let p=0,fill=document.getElementById('fill'),pct=document.getElementById('pct');
- let t=setInterval(()=>{p+=Math.random()*12;if(p>=100){p=100;clearInterval(t);setTimeout(()=>location.href='game.html',700)}fill.style.width=p+'%';pct.innerText=Math.floor(p)+'%';},120);
+// TRY TO LOCK TO LANDSCAPE FROM BEGINNING
+if(screen.orientation && screen.orientation.lock){
+  screen.orientation.lock('landscape').catch(()=>{});
 }
-</script>
-</body>
-</html>
+function goLoad(){
