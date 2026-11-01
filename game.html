@@ -1,23 +1,121 @@
-<!doctype html><html><head><link rel="manifest" href="manifest.json"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>VIBING RP ❤️</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial}#loginBox{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:rgba(0,0,0,0.95);border:2px solid #ffcc00;border-radius:18px;padding:28px;width:90%;max-width:360px;text-align:center}h1{color:#fff;font-size:30px}input{width:100%;padding:14px;margin:7px 0;background:#111;border:1px solid #333;border-radius:10px;color:#fff}.btn{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900}</style></head><body><div id="loginBox"><h1>VIBING RP <span style="color:red">❤️</span></h1><p style="color:#888;font-size:11px;margin-bottom:12px">NO GMAIL - ONLY NAME</p><input id="rpname" placeholder="Username: mike_jh"><input id="rpPass" type="password" placeholder="Password min 4" maxlength="8"><button class="btn" onclick="loginNoEmail()">LOGIN & PLAY</button></div><script>const sb=supabase.createClient('https://YOUR_ID.supabase.co','YOUR_KEY');window.loginNoEmail=async function(){let n=document.getElementById('rpname').value.trim().replace('/','_').toLowerCase();let p=document.getElementById('rpPass').value.trim();if(!n||n.split('_').length!=2){alert('Use mike_jh');return}if(p.length<4||p.length>8){alert('Password 4 to 8');return}localStorage.setItem('vibing_rp_name',n);localStorage.setItem('vibing_logged_in','true');try{await sb.from('vibe_users').upsert({username:n,password:p})}catch(e){}location.reload();};let saved=localStorage.getItem('vibing_rp_name');if(saved)document.getElementById('rpname').value=saved;</script></body></html>
-<script>/* NO GMAIL - VIBING RP ❤️ */ const sb={from:()=>({select:async()=>({data:[]}),insert:async()=>({data:null,error:null}),update:async()=>({data:null,error:null}),delete:async()=>({data:null,error:null}),upsert:async()=>({data:null,error:null})}),auth:{signUp:async()=>({data:{user:{id:'vibe-user'}},error:null}),signInWithPassword:async()=>({data:{user:{id:'vibe-user'}},error:null}),getUser:async()=>({data:{user:null}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe:()=>{}}}})}}; window.sb=sb; window.supabase={auth:sb.auth}; localStorage.setItem('vibe_no_email','true');</script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544" crossorigin="anonymous"></script>
-<script>// ===== VIBE RP CHARACTER LOADER =====
-let VIBE_SKIN=null;
-try{
-  const saved=localStorage.getItem('vibe_character');
-  const savedName=localStorage.getItem('vibe_skin_name');
-  if(saved){ VIBE_SKIN=JSON.parse(saved); }
-}catch(e){}
-function getVibeSkin(){ if(VIBE_SKIN) return VIBE_SKIN; return null; }
-function applyVibeSkin(){}
-// ===== END LOADER =====
-</script><title>VIBING RP ❤️</title><style>input[placeholder="Email"], input[type="email"], #email, input[id*="email" i]{display:none !important;}
-@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#0a0e1a;--card:#111827;}
-:root[data-theme="dark"]{--bg:#1b2233;--ui:rgba(30,32,40,.9);--ui2:#23262f;--ink:#ece8df;--line:#3a3e4a;color-scheme:dark}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);touch-action:none;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none}
-canvas{position:fixed;inset:0;display:block;z-index:0}
-.pill{position:fixed;z-index:3;background:var(--ui);padding:7px 13px;border-radius:18px;font-size:14px}
-#stats{top:12px;left:12px}
-#hpbar{top:52px;left:12px}
+<!doctype html>
+<html>
+<head>
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>VIBING RP - KCM ❤️</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Poppins',Arial;color:#fff}
+#loadScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.8)),url('https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?q=80&w=2000') center/cover;display:flex;justify-content:center;align-items:center}
+.load-content{width:90%;max-width:800px;text-align:center}
+.logo{font-size:80px;font-weight:900;line-height:0.8;text-shadow:0 5px 30px #000} .logo i{font-style:normal;color:#ffcc00}
+.tag{font-size:11px;letter-spacing:4px;margin:15px 0 30px}
+.bar-bg{width:100%;height:16px;background:rgba(255,255,255,0.2);border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.5)}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,#ffcc00,#ff9900);transition:width 0.1s}
+.feat{margin-top:35px;display:flex;justify-content:space-between;font-size:10px;opacity:0.9}
+#loginBox,#mainMenu{position:fixed;inset:0;z-index:9998;display:none;justify-content:center;align-items:center;background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.8)),url('https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?q=80&w=2000') center/cover}
+.box{background:rgba(15,25,55,0.97);border:2px solid #ffcc00;border-radius:20px;padding:28px;width:92%;max-width:380px;text-align:center;box-shadow:0 10px 40px #000}
+input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:1px solid #333;background:#111;color:#fff}
+.btn{width:100%;padding:14px;background:#ffcc00;border:none;border-radius:10px;font-weight:900;color:#000;cursor:pointer;margin-top:10px}
+#mainMenu{justify-content:flex-start;padding:30px}
+.menu-left{width:230px} .menu-left button{width:100%;padding:12px;margin:5px 0;background:rgba(0,0,0,0.6);border:1px solid #333;color:#fff;border-radius:8px;text-align:left;cursor:pointer}
+.menu-left button.on{background:#ffcc00;color:#000;font-weight:800}
+.play-big{position:absolute;right:25px;bottom:25px;background:#ffcc00;color:#000;padding:20px 45px;border-radius:14px;font-weight:900;font-size:26px;transform:rotate(-4deg);cursor:pointer;box-shadow:0 5px 20px #000}
+.kcm{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;color:#888}
+</style>
+</head>
+<body>
+
+<!-- IMAGE 1 - LOADING -->
+<div id="loadScreen">
+<div class="load-content">
+<div class="logo">VIBING<br><i>RP</i></div>
+<div class="tag">REAL PEOPLE • REAL STORIES • YOUR CITY • KCM</div>
+<div>LOADING... <span id="pct">0%</span></div>
+<div class="bar-bg"><div class="bar" id="bar"></div></div>
+<div class="feat"><span>🌐 OPEN WORLD</span><span>👥 ROLEPLAY</span><span>🚗 VEHICLES</span><span>🏠 HOUSES</span><span>💬 CHAT</span><span>⚙️ CUSTOMIZATION</span></div>
+</div>
+</div>
+
+<!-- LOGIN - ONLY Mike_chi + 8 DIGIT -->
+<div id="loginBox">
+<div class="box">
+<h1>VIBING <span style="color:#ffcc00">RP</span> ❤️</h1>
+<p>KCM COMPANY - NO GMAIL</p>
+<input id="rpname" placeholder="Username: Mike_chi">
+<input id="rpPass" type="password" placeholder="8 digit password" maxlength="8" inputmode="numeric">
+<button class="btn" onclick="login()">SET USERNAME ▶</button>
+<p style="font-size:9px;margin-top:10px;color:#aaa">Format: Mike_chi or any Name_Name • Password: 8 digits only<br>Example: Mike_chi / 12345678</p>
+</div>
+</div>
+
+<!-- IMAGE 2 - MAIN MENU -->
+<div id="mainMenu">
+<div class="menu-left">
+<h2>VIBING RP<br><span style="color:#ffcc00">KCM</span></h2>
+<button class="on">▶ PLAY</button>
+<button>👤 CHARACTER</button>
+<button>🎒 INVENTORY</button>
+<button>🚗 VEHICLES</button>
+<button>🗺️ MAP</button>
+<button>⚙️ SETTINGS</button>
+<button onclick="logout()">🚪 EXIT</button>
+<div style="margin-top:20px;font-size:11px;color:#aaa">USER: <span id="uName"></span><br>COMPANY: KCM</div>
+</div>
+<div class="play-big" onclick="play()">PLAY ▶</div>
+<div class="kcm">VIBING RP by KCM - Build Your Story</div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+// SUPABASE - DATA ONLY, NO EMAIL - YOUR REAL ADS KEPT
+const sb=supabase.createClient('https://YOUR_SUPABASE_ID.supabase.co','YOUR_SUPABASE_KEY');
+
+// LOADING 0-100% LIKE IMAGE 1
+let p=0; let iv=setInterval(()=>{p+=Math.random()*10; if(p>=100){p=100;clearInterval(iv);setTimeout(goLogin,400)} document.getElementById('bar').style.width=p+'%'; document.getElementById('pct').innerText=Math.floor(p)+'%';},100);
+
+function goLogin(){
+  document.getElementById('loadScreen').style.display='none';
+  let saved=localStorage.getItem('vibing_rp_name');
+  if(saved && localStorage.getItem('vibing_logged_in')==='true'){
+    document.getElementById('mainMenu').style.display='flex';
+    document.getElementById('uName').innerText=saved;
+  }else{
+    document.getElementById('loginBox').style.display='flex';
+    if(saved) document.getElementById('rpname').value=saved;
+  }
+}
+
+// LOGIN - Mike_chi FORMAT + 8 DIGIT - LOUD SKINS READY
+window.login=async function(){
+  let n=document.getElementById('rpname').value.trim().replace('/','_').toLowerCase();
+  let pw=document.getElementById('rpPass').value.trim();
+  if(!n.includes('_') || n.split('_').length!==2){alert('Use Mike_chi format! Example: Mike_chi, John_doe');return}
+  if(!/^[a-z0-9]+_[a-z0-9]+$/.test(n)){alert('Only letters+numbers + _');return}
+  if(!/^\d{8}$/.test(pw)){alert('Password must be exactly 8 digits! Example: 12345678');return}
+  localStorage.setItem('vibing_rp_name',n);
+  localStorage.setItem('vibing_pass',pw);
+  localStorage.setItem('vibing_logged_in','true');
+  try{await sb.from('vibe_users').upsert({username:n,password:pw,company:'KCM'})}catch(e){}
+  document.getElementById('loginBox').style.display='none';
+  document.getElementById('mainMenu').style.display='flex';
+  document.getElementById('uName').innerText=n;
+}
+
+window.play=function(){
+  // LOUD SKINS SYSTEM - Save for game.html
+  localStorage.setItem('kcm_skin_loud','true');
+  location.href='game.html?v=KCM_'+Date.now();
+}
+window.logout=function(){localStorage.removeItem('vibing_logged_in');location.reload();}
+</script>
+</body>
+</html>
 #ammo{top:92px;left:12px}
 #hint{top:12px;right:12px;max-width:50%;text-align:right}
 #job{top:52px;right:12px;max-width:50%;text-align:right}
